@@ -1,0 +1,72 @@
+#include "integrators.h"
+
+
+void IntegratorEuler::step(ParticleSystem &system, double dt) {
+    double t0 = system.getTime();
+    Vecd x0 = system.getState();
+    Vecd dx = system.getDerivative();
+    Vecd x1 = x0 + dt*dx;
+    system.setState(x1);
+    system.setTime(t0+dt);
+    system.updateForces();
+}
+
+
+void IntegratorSymplecticEuler::step(ParticleSystem &system, double dt) {
+    double t0 = system.getTime();
+    Vecd v1 = system.getVelocities() + dt * system.getAccelerations();
+    system.setVelocities(v1);
+    Vecd x1 = system.getPositions() + dt * v1;
+    system.setPositions(x1);
+    system.setTime(t0 + dt);
+    system.updateForces();
+}
+
+void IntegratorMidpoint::step(ParticleSystem &system, double dt) {
+    double t0 = system.getTime();
+    Vecd x0 = system.getState();
+    Vecd dx = system.getDerivative();
+    Vecd x1 = x0 + (dx / 2) * dt;
+
+    system.setState(x1);
+    system.updateForces();
+    Vecd midPoint_dx = system.getDerivative();
+    Vecd xmid = x0 + dt * midPoint_dx;
+    system.setState(xmid);
+    system.setTime(t0 + dt);
+    system.updateForces();
+}
+
+void IntegratorRK2::step(ParticleSystem &system, double dt) {
+    double t0 = system.getTime();
+    Vecd x0 = system.getState();
+    Vecd k1 = system.getDerivative();
+    
+    system.setTime(t0 + dt);
+    
+    Vecd x2 = x0 + dt * k1;
+    system.setState(x2);
+    system.updateForces();
+    Vecd k2 = system.getDerivative();
+
+
+    Vecd x_final = x0 + (dt / 2) * (k1 + k2);
+    system.setState(x_final);
+    system.setTime(t0 + dt);
+    system.updateForces();
+}
+
+
+void IntegratorRK4::step(ParticleSystem &system, double dt) {
+    // TODO
+}
+
+
+void IntegratorVerlet::step(ParticleSystem &system, double dt) {
+    Vecd x0 = system.getPositions();
+    system.setPositions(system.getPositions() + this->kd * (system.getPositions() - system.getPreviousPositions()) + (dt * dt) * system.getAccelerations());
+    system.setVelocities((system.getPositions() - system.getPreviousPositions()) / (2 * dt));
+    system.setPreviousPositions(x0);
+    system.setTime(system.getTime() + dt);
+    system.updateForces();
+}
