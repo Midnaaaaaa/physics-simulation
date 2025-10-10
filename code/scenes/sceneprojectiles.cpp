@@ -101,6 +101,7 @@ void SceneProjectiles::initialize() {
     fDrag2->addInfluencedParticle(systemNumerical2.getParticle(0));
     systemNumerical2.addForce(fDrag2);
 
+    colliderFloor = ColliderPlane(Vec3(0, 1, 0), 0);
 }
 
 
@@ -132,12 +133,19 @@ void SceneProjectiles::reset() {
     systemAnalytic.getParticle(0)->vel = shotSpeed*Vec3(std::cos(shotAngle), std::sin(shotAngle), 0);
     systemNumerical1.getParticle(0)->pos = Vec3(0, shotHeight, zdist);
     systemNumerical1.getParticle(0)->vel = shotSpeed*Vec3(std::cos(shotAngle), std::sin(shotAngle), 0);
+    systemNumerical1.getParticle(0)->elasticity = widget->getElasticity();
+    systemNumerical1.getParticle(0)->friction = widget->getFriction();
     systemNumerical2.getParticle(0)->pos = Vec3(0, shotHeight, -zdist);
     systemNumerical2.getParticle(0)->vel = shotSpeed*Vec3(std::cos(shotAngle), std::sin(shotAngle), 0);
+    systemNumerical2.getParticle(0)->elasticity = widget->getElasticity();
+    systemNumerical2.getParticle(0)->friction = widget->getFriction();
 
     // update gravity accelerations
     fGravity1->setAcceleration(Vec3(0, -gravityAccel, 0));
     fGravity2->setAcceleration(Vec3(0, -gravityAccel, 0));
+
+    systemNumerical1.setTime(0);
+    systemNumerical2.setTime(0);
 
     // update system forces
     systemNumerical1.updateForces();
@@ -189,12 +197,13 @@ void SceneProjectiles::update(double dt) {
 
         // collision test
         Particle* p = systemNumerical1.getParticle(0);
-        if (p->pos.y() < 0) {
-            // resolve
-            // TODO
+        if (p->pos.y() <= 0) {
 
             // stop sim for this system
-            system1active = false;
+            /*system1active = false;*/
+        }
+        if (colliderFloor.testCollision(p, collisionInfo)) {
+            colliderFloor.resolveCollision(p, collisionInfo, p->elasticity, p->friction);
         }
 
         // record trajectory
@@ -210,13 +219,16 @@ void SceneProjectiles::update(double dt) {
 
         // collision test
         Particle* p = systemNumerical2.getParticle(0);
-        if (p->pos.y() < 0) {
+        if (p->pos.y() <= 0) {
             // resolve
-            // TODO
 
             // stop sim for this system
-            system2active = false;
+            /*system2active = false;*/
         }
+        if (colliderFloor.testCollision(p, collisionInfo)) {
+            colliderFloor.resolveCollision(p, collisionInfo, p->elasticity, p->friction);
+        }
+
 
         // record trajectory
         trajectoryNumerical2.push_back(p->pos);

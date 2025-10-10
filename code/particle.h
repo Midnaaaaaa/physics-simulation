@@ -17,6 +17,8 @@ public:
     double life   = 0.0;
     Vec3 color    = Vec3(1, 1, 1);
     unsigned int id = 0;
+    double elasticity;
+    double friction;
 
     Particle() {
         pos	    = Vec3(0.0, 0.0, 0.0);
@@ -24,6 +26,8 @@ public:
         force   = Vec3(0.0, 0.0, 0.0);
         prevPos = pos;
         mass    = 1.0;
+        elasticity = 0.5;
+        friction   = 0.5;
     }
 
     Particle(const Vec3& p, const Vec3& v, float m) {
@@ -44,6 +48,8 @@ public:
         color   = p.color;
         radius  = p.radius;
         life    = p.life;
+        elasticity = p.elasticity;
+        friction   = p.friction;
     }
 
     ~Particle() {

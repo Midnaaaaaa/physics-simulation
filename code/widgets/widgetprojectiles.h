@@ -28,6 +28,9 @@ public:
 
     double getReynoldsNumber() const;
 
+    double getElasticity() const;
+    double getFriction() const;
+
     void setSolver1(int idx);
     void setSolver2(int idx);
 

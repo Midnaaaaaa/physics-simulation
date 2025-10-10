@@ -63,3 +63,11 @@ double WidgetProjectiles::getKQuadratic() const{
 double WidgetProjectiles::getReynoldsNumber() const{
     return ui->reynolds->value();
 }
+
+double WidgetProjectiles::getElasticity() const{
+	return ui->elasticity->value();
+}
+
+double WidgetProjectiles::getFriction() const{
+	return ui->friction->value();
+}

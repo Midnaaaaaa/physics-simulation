@@ -8,6 +8,7 @@
 #include "widgetprojectiles.h"
 #include "particlesystem.h"
 #include "integrators.h"
+#include "colliders.h"
 
 class SceneProjectiles : public Scene
 {
@@ -55,6 +56,10 @@ protected:
     ForceConstAcceleration *fGravity2 = nullptr;
     ForceDrag *fDrag1 = nullptr;
     ForceDrag *fDrag2 = nullptr;
+
+    ColliderPlane colliderFloor;
+    Collision collisionInfo;
+    
 
     bool system1active, system2active;
 

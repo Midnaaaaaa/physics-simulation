@@ -9,10 +9,10 @@ void Collider::resolveCollision(Particle* p, const Collision& col, double kElast
 {
     float planeDisplacement = -col.normal.dot(col.position);
     float projectedDistance = col.normal.dot(p->pos) + planeDisplacement;
-    Vec3 newPos = p->pos - (1 + kElastic) * projectedDistance * col.normal;
+    Vec3 newPos = p->pos - ((1 + kElastic) * projectedDistance) * col.normal;
 
     Vec3 vN = -kElastic * col.normal.dot(p->vel) * col.normal;
-    Vec3 vT = (1 - kFriction) * p->vel - vN;
+    Vec3 vT = (1 - kFriction) * (p->vel - col.normal.dot(p->vel) * col.normal);
 
     p->pos = newPos;
     p->vel = vN + vT;
@@ -39,6 +39,7 @@ bool ColliderPlane::testCollision(const Particle* p, Collision& colInfo) const
     }
     return false;
 }
+
 
 
 

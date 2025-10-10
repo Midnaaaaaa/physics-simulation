@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
+    <width>285</width>
     <height>453</height>
    </rect>
   </property>
@@ -236,6 +236,26 @@
       <double>1000.000000000000000</double>
      </property>
     </widget>
+   </item>
+   <item row="11" column="0">
+    <widget class="QLabel" name="label_10">
+     <property name="text">
+      <string>Elasticity</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="0">
+    <widget class="QLabel" name="label_11">
+     <property name="text">
+      <string>Friction</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QDoubleSpinBox" name="elasticity"/>
+   </item>
+   <item row="12" column="1">
+    <widget class="QDoubleSpinBox" name="friction"/>
    </item>
   </layout>
  </widget>
