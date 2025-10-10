@@ -410,7 +410,7 @@ void SceneCloth::update(double dt)
     }
 
     int relaxationIterations = 20;
-    double epsilon = 0.1;
+    double epsilon = 0.01;
 
     for(int i = 0; i < relaxationIterations; ++i){
         for (ForceSpring* f : springsStretch) {
@@ -421,7 +421,7 @@ void SceneCloth::update(double dt)
             double currentLength = (p1->pos - p2->pos).norm();
             double extraElongation = currentLength - desiredLength;
             
-            if(extraElongation > epsilon){
+            if(abs(extraElongation) > epsilon){
                 if(!fixedParticle[p1->id] && !fixedParticle[p2->id]){
                     Vec3 dispVector = (extraElongation * 0.5) * (p2->pos - p1->pos).normalized();
                     p1->pos += dispVector;
@@ -434,7 +434,6 @@ void SceneCloth::update(double dt)
                     p2->pos -= dispVector;
                 }
             }
-
         }
     }
 
