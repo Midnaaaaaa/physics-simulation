@@ -227,6 +227,12 @@ void SceneFountain::update(double dt) {
         if (colliderRamp.testCollision(p, colInfo)) {
             colliderRamp.resolveCollision(p, colInfo, kBounce, kFriction);
         }
+        if (colliderSphere.testCollision(p, colInfo)) {
+			colliderSphere.resolveCollision(p, colInfo, kBounce, kFriction);
+		}
+        if (colliderBox.testCollision(p, colInfo)) {
+			colliderBox.resolveCollision(p, colInfo, kBounce, kFriction);
+		}
     }
 
     // check dead particles
