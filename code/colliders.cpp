@@ -56,18 +56,18 @@ bool ColliderSphere::testCollision(const Particle* p, Collision& colInfo) const
     Vec3 v = p->pos - p->prevPos;
     double a = v.dot(v);
     double b = 2 * v.dot(p->prevPos - this->center);
-    double c = this->center.dot(this->center) + p->prevPos.dot(p->prevPos) - 2 * this->center.dot(p->prevPos) - (this->radius + p->radius) * (this->radius + p->radius);
+    double c = this->center.dot(this->center) + p->prevPos.dot(p->prevPos) - 2 * p->prevPos.dot(this->center) - (this->radius + p->radius) * (this->radius + p->radius);
     
     double discriminant = b * b - 4 * a * c;
     if (discriminant < 0) return false;
 
     double sqrtDisc = std::sqrt(discriminant);
-    double lambda1 = (-b - sqrtDisc) / (2 * a);
-    double lambda2 = (-b + sqrtDisc) / (2 * a);
-    
-    double lambda = (lambda1 >= 0 && lambda1 <= 1) ? lambda1 : ((lambda2 >= 0 && lambda2 <= 1) ? lambda2 : -1);
-	colInfo.position = p->prevPos + lambda * v;
-	colInfo.normal = (colInfo.position - this->center).normalized();
+    double t1 = (-b - sqrtDisc) / (2 * a);
+    double t2 = (-b + sqrtDisc) / (2 * a);
+    double t = (t1 >= 0 && t1 <= 1) ? t1 : ((t2 >= 0 && t2 <= 1) ? t2 : -1);
+    if (t < 0) return false;
+    colInfo.position = p->prevPos + t * v;
+    colInfo.normal = (colInfo.position - this->center).normalized();
 	return true;
 }
 

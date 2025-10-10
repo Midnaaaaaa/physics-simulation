@@ -6,19 +6,24 @@ void IntegratorEuler::step(ParticleSystem &system, double dt) {
     Vecd x0 = system.getState();
     Vecd dx = system.getDerivative();
     Vecd x1 = x0 + dt*dx;
+    Vecd previousPositions = system.getPositions();
+
     system.setState(x1);
     system.setTime(t0+dt);
+    system.setPreviousPositions(previousPositions);
     system.updateForces();
 }
 
 
 void IntegratorSymplecticEuler::step(ParticleSystem &system, double dt) {
     double t0 = system.getTime();
+    Vecd previousPositions = system.getPositions();
     Vecd v1 = system.getVelocities() + dt * system.getAccelerations();
     system.setVelocities(v1);
     Vecd x1 = system.getPositions() + dt * v1;
     system.setPositions(x1);
     system.setTime(t0 + dt);
+    system.setPreviousPositions(previousPositions);
     system.updateForces();
 }
 
@@ -27,6 +32,7 @@ void IntegratorMidpoint::step(ParticleSystem &system, double dt) {
     Vecd x0 = system.getState();
     Vecd dx = system.getDerivative();
     Vecd x1 = x0 + (dx / 2) * dt;
+    Vecd previousPositions = system.getPositions();
 
     system.setState(x1);
     system.updateForces();
@@ -34,6 +40,7 @@ void IntegratorMidpoint::step(ParticleSystem &system, double dt) {
     Vecd xmid = x0 + dt * midPoint_dx;
     system.setState(xmid);
     system.setTime(t0 + dt);
+    system.setPreviousPositions(previousPositions);
     system.updateForces();
 }
 
@@ -41,6 +48,7 @@ void IntegratorRK2::step(ParticleSystem &system, double dt) {
     double t0 = system.getTime();
     Vecd x0 = system.getState();
     Vecd k1 = system.getDerivative();
+    Vecd previousPositions = system.getPositions();
     
     system.setTime(t0 + dt);
     
@@ -53,6 +61,7 @@ void IntegratorRK2::step(ParticleSystem &system, double dt) {
     Vecd x_final = x0 + (dt / 2) * (k1 + k2);
     system.setState(x_final);
     system.setTime(t0 + dt);
+    system.setPreviousPositions(previousPositions);
     system.updateForces();
 }
 
