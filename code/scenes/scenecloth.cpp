@@ -78,6 +78,9 @@ void SceneCloth::initialize() {
     //colliderBall.setRadius(30);
     //colliderCube.setFromCenterSize(Vec3(-60,30,0), Vec3(60, 40, 60));
     //colliderWalls.setFromCenterSize(Vec3(0, 0, 0), Vec3(200, 200, 200));
+	colliderBall = new ColliderSphere();
+	colliderBall->setCenter(Vec3(40, -20, 0));
+	colliderBall->setRadius(30);
 }
 
 
@@ -339,7 +342,15 @@ void SceneCloth::paint(const Camera& camera)
         }
     }
 
-    // TODO: draw colliders and walls
+    modelMat = QMatrix4x4();
+    modelMat.translate(colliderBall->getCenter().x(), colliderBall->getCenter().y(), colliderBall->getCenter().z());
+    modelMat.scale(colliderBall->getRadius());
+    shaderPhong->setUniformValue("ModelMatrix", modelMat);
+    shaderPhong->setUniformValue("matdiff", 0.3f, 0.3f, 0.7f);
+    shaderPhong->setUniformValue("matspec", 1.0f, 1.0f, 1.0f);
+    shaderPhong->setUniformValue("matshin", 100.f);
+    vaoSphereL->bind();
+    glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereL, GL_UNSIGNED_INT, 0);
 
     shaderPhong->release();
 
@@ -487,7 +498,11 @@ void SceneCloth::update(double dt)
 
     // collisions
     for (Particle* p : system.getParticles()) {
-        // TODO: test and resolve collisions
+		Collision colInfo;
+
+        if(colliderBall->testCollision(p, colInfo)){
+            colliderBall->resolveCollision(p, colInfo, colBounce, colFriction);
+		}
     }
 
     // needed after we have done collisions and relaxation, since spring forces depend on p and v
@@ -536,7 +551,9 @@ void SceneCloth::mouseMoved(const QMouseEvent* e, const Camera& cam)
     grabY = e->pos().y();
 
     if (e->modifiers() & Qt::ControlModifier) {
-
+        double d = -(colliderBall->getCenter() - cam.getPos()).dot(cam.zAxis());
+        Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
+        colliderBall->setCenter(colliderBall->getCenter() + disp);
     }
     else if (e->modifiers() & Qt::ShiftModifier) {
 

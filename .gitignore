@@ -8,6 +8,8 @@ Simulations
 Simulations.vcxproj.user
 ui_*.h
 Simulation.qtvscr
+Simulations.vcxproj
+Simulations.vcxproj.filters
 
 debug/*
 release/*
