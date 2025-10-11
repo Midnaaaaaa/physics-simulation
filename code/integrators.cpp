@@ -67,7 +67,34 @@ void IntegratorRK2::step(ParticleSystem &system, double dt) {
 
 
 void IntegratorRK4::step(ParticleSystem &system, double dt) {
-    // TODO
+	double t0 = system.getTime();
+	Vecd x0 = system.getState();
+	Vecd k1 = system.getDerivative();
+	Vecd previousPositions = system.getPositions();
+
+	system.setTime(t0 + dt / 2);
+	Vecd x2 = x0 + (dt / 2) * k1;
+	system.setState(x2);
+
+	system.updateForces();
+
+	Vecd k2 = system.getDerivative();
+	Vecd x3 = x0 + (dt / 2) * k2;
+	system.setState(x3);
+	system.updateForces();
+
+	Vecd k3 = system.getDerivative();
+	system.setTime(t0 + dt);
+	Vecd x4 = x0 + dt * k3;
+	system.setState(x4);
+	system.updateForces();
+	Vecd k4 = system.getDerivative();
+
+	Vecd x_final = x0 + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4);
+	system.setState(x_final);
+	system.setTime(t0 + dt);
+    system.setPreviousPositions(previousPositions);
+	system.updateForces();
 }
 
 
