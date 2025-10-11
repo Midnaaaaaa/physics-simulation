@@ -7,8 +7,8 @@
  */
 void Collider::resolveCollision(Particle* p, const Collision& col, double kElastic, double kFriction) const
 {
-    float planeDisplacement = -col.normal.dot(col.position);
-    float projectedDistance = col.normal.dot(p->pos) + planeDisplacement;
+    double planeDisplacement = -col.normal.dot(col.position);
+    double projectedDistance = col.normal.dot(p->pos) + planeDisplacement;
     Vec3 newPos = p->pos - ((1 + kElastic) * projectedDistance) * col.normal;
 
     Vec3 vN = -kElastic * col.normal.dot(p->vel) * col.normal;
