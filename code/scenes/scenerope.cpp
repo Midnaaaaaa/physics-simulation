@@ -8,7 +8,7 @@
 SceneRope::SceneRope() {
     widget = new WidgetRope();
     connect(widget, SIGNAL(updatedParameters()),
-            this, SLOT(updateSimParams()));
+        this, SLOT(updateSimParams()));
 }
 
 SceneRope::~SceneRope() {
@@ -29,8 +29,8 @@ void SceneRope::initialize() {
     // load shader
     shaderPhong = glutils::loadShaderProgram(":/shaders/phong.vert", ":/shaders/phong.frag");
     shaderLines = glutils::loadShaderProgram(":/shaders/lines.vert",
-                                             ":/shaders/lines.geom",
-                                             ":/shaders/lines.frag");
+        ":/shaders/lines.geom",
+        ":/shaders/lines.frag");
 
     // create sphere VAOs
     Model sphere = Model::createIcosphere(3);
@@ -49,7 +49,7 @@ void SceneRope::initialize() {
     vboRope->create();
     vboRope->bind();
     vboRope->setUsagePattern(QOpenGLBuffer::UsagePattern::DynamicDraw);
-    vboRope->allocate(1000*3*sizeof(float)); // sync with widget max particles
+    vboRope->allocate(1000 * 3 * sizeof(float)); // sync with widget max particles
     shaderLines->setAttributeBuffer("vertex", GL_FLOAT, 0, 3, 0);
     shaderLines->enableAttributeArray("vertex");
     vaoRope->release();
@@ -60,13 +60,13 @@ void SceneRope::initialize() {
     system.addForce(fGravity);
 
     // colliders
-    colliderBall.setCenter(Vec3(0,-50,0));
+    colliderBall.setCenter(Vec3(0, -50, 0));
     colliderBall.setRadius(30);
 }
 
 void SceneRope::reset()
 {
-    if(integrator != nullptr){
+    if (integrator != nullptr) {
         delete integrator;
     }
     integrator = createIntegrator(widget->getIntegratorType());
@@ -89,48 +89,48 @@ void SceneRope::reset()
     // rope props
     ropeLength = widget->getRopeLength();
     numParticles = widget->getNumParticles();
-    edgeLength = ropeLength/(numParticles-1);
+    edgeLength = ropeLength / (numParticles - 1);
     anchoredEnd = widget->anchorRopeEnd();
 
     // create particles
     int startConfig = widget->getStartConfig();
-    const Vec3 color1 = Vec3(235/255.0, 51/255.0, 36/255.0);
-    const Vec3 color2 = Vec3(163/255.0, 73/255.0, 164/255.0);
+    const Vec3 color1 = Vec3(235 / 255.0, 51 / 255.0, 36 / 255.0);
+    const Vec3 color2 = Vec3(163 / 255.0, 73 / 255.0, 164 / 255.0);
 
     for (int i = 0; i < numParticles; i++) {
 
-        Vec3 pos(0,0,0);
-        double t = i*edgeLength;
+        Vec3 pos(0, 0, 0);
+        double t = i * edgeLength;
         switch (startConfig) {
-            case 0: // vertical
-                pos = Vec3(0, 90, 0) + t*Vec3(0, -1, 0);
-                break;
-            case 1: // horizontal
-                pos = Vec3(-90, 90, 0) + t*Vec3(1, 0, 0);
-                break;
-            case 2: // helix
-                pos = Vec3(0, 90, 0) - t*Vec3(std::cos(t/3.0), t/8.0,
-                                              std::sin(t/3.0)).normalized();
-                break;
-            default:
-                break;
+        case 0: // vertical
+            pos = Vec3(0, 90, 0) + t * Vec3(0, -1, 0);
+            break;
+        case 1: // horizontal
+            pos = Vec3(-90, 90, 0) + t * Vec3(1, 0, 0);
+            break;
+        case 2: // helix
+            pos = Vec3(0, 90, 0) - t * Vec3(std::cos(t / 3.0), t / 8.0,
+                std::sin(t / 3.0)).normalized();
+            break;
+        default:
+            break;
         }
 
         Particle* p = new Particle();
         p->id = i;
         p->pos = pos;
         p->prevPos = pos;
-        p->vel = Vec3(0,0,0);
+        p->vel = Vec3(0, 0, 0);
         p->mass = 1;
         p->radius = particleRadius;
-        p->color = (1.0 - double(i)/numParticles)*color1
-                        + double(i)/numParticles *color2;
+        p->color = (1.0 - double(i) / numParticles) * color1
+            + double(i) / numParticles * color2;
         particles.push_back(p);
 
         // if anchor, keep this particle out of physical sim
         if (anchoredEnd && i == 0) {
             anchor = p;
-            anchor->color = Vec3(50/255.0, 130/255.0, 246/255.0);
+            anchor->color = Vec3(50 / 255.0, 130 / 255.0, 246 / 255.0);
         }
         else {
             system.addParticle(p);
@@ -143,13 +143,15 @@ void SceneRope::reset()
     double kd = widget->getDamping();
     for (int i = 1; i < numParticles; i++) {
         ForceSpring* f = new ForceSpring();
-        f->setParticlePair(particles[i-1], particles[i]);
+        f->setParticlePair(particles[i - 1], particles[i]);
         f->setRestLength(edgeLength);
         f->setSpringConstant(ks);
         f->setDampingCoeff(kd);
         system.addForce(f);
         springs.push_back(f);
     }
+
+    selectedParticle = -1;
 }
 
 void SceneRope::updateSimParams()
@@ -176,7 +178,7 @@ void SceneRope::updateSimParams()
 void SceneRope::paint(const Camera& camera) {
 
     // pointer to current context OpenGL functions
-    QOpenGLFunctions *glFuncs = QOpenGLContext::currentContext()->functions();
+    QOpenGLFunctions* glFuncs = QOpenGLContext::currentContext()->functions();
 
     shaderPhong->bind();
 
@@ -188,8 +190,8 @@ void SceneRope::paint(const Camera& camera) {
 
     // lighting
     const int numLights = 1;
-    const QVector3D lightPosWorld[numLights] = {QVector3D(60,60,100)};
-    const QVector3D lightColor[numLights] = {QVector3D(1,1,1)};
+    const QVector3D lightPosWorld[numLights] = { QVector3D(60,60,100) };
+    const QVector3D lightColor[numLights] = { QVector3D(1,1,1) };
     QVector3D lightPosCam[numLights];
     for (int i = 0; i < numLights; i++) {
         lightPosCam[i] = camView.map(lightPosWorld[i]);
@@ -209,14 +211,14 @@ void SceneRope::paint(const Camera& camera) {
             Vec3   p = particle->pos;
             Vec3   c = particle->color;
             double r = particle->radius;
-            if (i == selectedParticle) c = Vec3(1.0,0.9,0);
+            if (i == selectedParticle) c = Vec3(1.0, 0.9, 0);
 
             modelMat = QMatrix4x4();
             modelMat.translate(p[0], p[1], p[2]);
             modelMat.scale(r * particleRadius);
             shaderPhong->setUniformValue("ModelMatrix", modelMat);
             shaderPhong->setUniformValue("matdiff", GLfloat(c[0]), GLfloat(c[1]), GLfloat(c[2]));
-            glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereS, GL_UNSIGNED_INT, 0);
+            glFuncs->glDrawElements(GL_TRIANGLES, 3 * numFacesSphereS, GL_UNSIGNED_INT, 0);
         }
     }
 
@@ -230,21 +232,21 @@ void SceneRope::paint(const Camera& camera) {
     shaderPhong->setUniformValue("matdiff", 0.8f, 0.8f, 0.8f);
     shaderPhong->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
     shaderPhong->setUniformValue("matshin", 0.0f);
-    glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereL, GL_UNSIGNED_INT, 0);
+    glFuncs->glDrawElements(GL_TRIANGLES, 3 * numFacesSphereL, GL_UNSIGNED_INT, 0);
 
     shaderPhong->release();
 
 
     // update rope VBO coords
     vboRope->bind();
-    float* pos = new float[3*numParticles];
+    float* pos = new float[3 * numParticles];
     for (int i = 0; i < numParticles; i++) {
-        pos[3*i  ] = particles[i]->pos.x();
-        pos[3*i+1] = particles[i]->pos.y();
-        pos[3*i+2] = particles[i]->pos.z();
+        pos[3 * i] = particles[i]->pos.x();
+        pos[3 * i + 1] = particles[i]->pos.y();
+        pos[3 * i + 2] = particles[i]->pos.z();
     }
-    void* bufptr = vboRope->mapRange(0, 3*numParticles*sizeof(float), QOpenGLBuffer::RangeInvalidateBuffer | QOpenGLBuffer::RangeWrite);
-    memcpy(bufptr, (void*)(pos), 3*numParticles*sizeof(float));
+    void* bufptr = vboRope->mapRange(0, 3 * numParticles * sizeof(float), QOpenGLBuffer::RangeInvalidateBuffer | QOpenGLBuffer::RangeWrite);
+    memcpy(bufptr, (void*)(pos), 3 * numParticles * sizeof(float));
     vboRope->unmap();
     vboRope->release();
     delete[] pos;
@@ -254,7 +256,7 @@ void SceneRope::paint(const Camera& camera) {
     shaderLines->bind();
     shaderLines->setUniformValue("ProjMatrix", camProj);
     shaderLines->setUniformValue("ViewMatrix", camView);
-    shaderLines->setUniformValue("radius", float(0.5*particleRadius));
+    shaderLines->setUniformValue("radius", float(0.5 * particleRadius));
     shaderLines->setUniformValue("matdiff", 0.7f, 0.0f, 0.0f);
     shaderLines->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
     shaderLines->setUniformValue("matshin", 0.0f);
@@ -291,15 +293,15 @@ void SceneRope::update(double dt)
     // user interaction
     if (selectedParticle >= 0) {
         Particle* p = particles[selectedParticle];
-        p->pos     = cursorWorldPos;
-        p->vel     = Vec3(0,0,0);
+        p->pos = cursorWorldPos;
+        p->vel = Vec3(0, 0, 0);
         if (checkCollisions) {
             if (colliderBall.testCollision(p, colInfo)) {
                 colliderBall.resolveCollision(p, colInfo, colBounce, colFriction);
             }
         }
         p->prevPos = p->pos;
-        p->vel     = Vec3(0,0,0);
+        p->vel = Vec3(0, 0, 0);
     }
 }
 
@@ -308,6 +310,27 @@ void SceneRope::mousePressed(const QMouseEvent* e, const Camera& cam)
 {
     grabX = e->pos().x();
     grabY = e->pos().y();
+
+    // find nearest particle to mouse click
+    Vec3 rayDir = cam.getRayDir(e->pos().x(), e->pos().y());
+    Vec3 rayOrigin = cam.getPos();
+
+    double minDist = 0.5; // max distance allowed from ray to select particle
+
+    Particle* nearestP = nullptr;
+    for (Particle* p : particles) {
+        Vec3 v2 = p->pos - rayOrigin;
+        double d = v2.cross(rayDir).norm() / rayDir.norm();
+
+        if (d - p->radius < minDist) {
+            nearestP = p;
+        }
+    }
+    selectedParticle = (nearestP) ? nearestP->id : -1;
+
+    if (selectedParticle >= 0) {
+        cursorWorldPos = particles[selectedParticle]->pos;
+    }
 }
 
 
@@ -323,9 +346,17 @@ void SceneRope::mouseMoved(const QMouseEvent* e, const Camera& cam)
         Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
         colliderBall.setCenter(colliderBall.getCenter() + disp);
     }
+    else {
+        if (selectedParticle >= 0) {
+            double d = -(particles[selectedParticle]->pos - cam.getPos()).dot(cam.zAxis());
+            Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
+            cursorWorldPos += disp;
+        }
+    }
 }
 
 
 void SceneRope::mouseReleased(const QMouseEvent*, const Camera&)
 {
+    selectedParticle = -1;
 }

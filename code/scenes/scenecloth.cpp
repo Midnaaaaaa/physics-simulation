@@ -215,8 +215,6 @@ void SceneCloth::reset()
     // forces: gravity
     system.addForce(fGravity);
 
-    // TODO: create spring forces
-    // Code for PROVOT layout
     for(int i = 0; i < numParticlesX; ++i){
         for(int j = 0; j < numParticlesY; ++j){
             computeProvot(i, j);
@@ -405,12 +403,12 @@ void SceneCloth::update(double dt)
         Particle* p = system.getParticle(selectedParticle);
         p->pos = cursorWorldPos;
         p->vel = Vec3(0,0,0);
-
-        // TODO: test and resolve for collisions during user movement
+        p->prevPos = p->pos;
+        p->vel = Vec3(0, 0, 0);
     }
 
     int relaxationIterations = 20;
-    double epsilon = 0.01;
+    double epsilon = 0.001;
 
     for(int i = 0; i < relaxationIterations; ++i){
         for (ForceSpring* f : springsStretch) {
@@ -430,6 +428,56 @@ void SceneCloth::update(double dt)
                     Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
                     p1->pos += dispVector;
                 } else if(!fixedParticle[p2->id]){
+                    Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
+                    p2->pos -= dispVector;
+                }
+            }
+        }
+
+        for (ForceSpring* f : springsShear) {
+            Particle* p1 = f->getParticle1();
+            Particle* p2 = f->getParticle2();
+
+            double desiredLength = f->getRestLength();
+            double currentLength = (p1->pos - p2->pos).norm();
+            double extraElongation = currentLength - desiredLength;
+
+            if (abs(extraElongation) > epsilon) {
+                if (!fixedParticle[p1->id] && !fixedParticle[p2->id]) {
+                    Vec3 dispVector = (extraElongation * 0.5) * (p2->pos - p1->pos).normalized();
+                    p1->pos += dispVector;
+                    p2->pos -= dispVector;
+                }
+                else if (!fixedParticle[p1->id]) {
+                    Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
+                    p1->pos += dispVector;
+                }
+                else if (!fixedParticle[p2->id]) {
+                    Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
+                    p2->pos -= dispVector;
+                }
+            }
+        }
+
+        for (ForceSpring* f : springsBend) {
+            Particle* p1 = f->getParticle1();
+            Particle* p2 = f->getParticle2();
+
+            double desiredLength = f->getRestLength();
+            double currentLength = (p1->pos - p2->pos).norm();
+            double extraElongation = currentLength - desiredLength;
+
+            if (abs(extraElongation) > epsilon) {
+                if (!fixedParticle[p1->id] && !fixedParticle[p2->id]) {
+                    Vec3 dispVector = (extraElongation * 0.5) * (p2->pos - p1->pos).normalized();
+                    p1->pos += dispVector;
+                    p2->pos -= dispVector;
+                }
+                else if (!fixedParticle[p1->id]) {
+                    Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
+                    p1->pos += dispVector;
+                }
+                else if (!fixedParticle[p2->id]) {
                     Vec3 dispVector = extraElongation * (p2->pos - p1->pos).normalized();
                     p2->pos -= dispVector;
                 }
@@ -455,13 +503,24 @@ void SceneCloth::mousePressed(const QMouseEvent* e, const Camera& cam)
 
     if (!(e->modifiers() & Qt::ControlModifier)) {
 
-        Vec3 rayDir = cam.getRayDir(grabX, grabY);
-        Vec3 origin = cam.getPos();
-
         selectedParticle = -1;
-        for (int i = 0; i < numParticles; i++) {
-            // TODO: point-ray dist to check if we select one particle
+
+        // find nearest particle to mouse click
+        Vec3 rayDir = cam.getRayDir(e->pos().x(), e->pos().y());
+        Vec3 rayOrigin = cam.getPos();
+
+        double minDist = 0.5; // max distance allowed from ray to select particle
+
+        Particle* nearestP = nullptr;
+        for (Particle* p : system.getParticles()) {
+            Vec3 v2 = p->pos - rayOrigin;
+            double d = v2.cross(rayDir).norm() / rayDir.norm();
+
+            if (d - p->radius < minDist) {
+                nearestP = p;
+            }
         }
+        selectedParticle = (nearestP && !fixedParticle[nearestP->id]) ? nearestP->id : -1;
 
         if (selectedParticle >= 0) {
             cursorWorldPos = system.getParticle(selectedParticle)->pos;
