@@ -59,6 +59,9 @@ public:
 
     virtual bool isInside(const Particle* p) const;
     virtual bool testCollision(const Particle* p, Collision& colInfo) const;
+    
+    // Static method for particle-particle collision (both moving)
+    static bool testParticleParticleCollision(const Particle* p1, const Particle* p2, Collision& colInfo);
 
 protected:
     Vec3 center;

@@ -125,19 +125,12 @@ void ParticleSystem::setPreviousPositions(const Vecd& ppos) {
     }
 }
 
-
-void ParticleSystem::clearSpatialHash() {
-	hashTable.clear();
-    particleEntries.clear();
-	spacing = 1.0;
-    if (particles.size() > 0) {
-        spacing = (particles[0]->radius) * 2.0;
-        tableSize = particles.size() * 2;
-    }
-}
-
 void ParticleSystem::buildSpatialHash(double cellSize) {
-	clearSpatialHash();
+    hashTable.clear();
+    particleEntries.clear();
+
+	spacing = cellSize;
+    tableSize = particles.size() * 2;
 
 	hashTable.resize(tableSize + 1, 0);
 	particleEntries.resize(particles.size(), 0);
@@ -148,13 +141,16 @@ void ParticleSystem::buildSpatialHash(double cellSize) {
 	}
 
 	//Partial sum to get starting indices
-    for(int i = 0; i < hashTable.size(); i++) {
-        hashTable[i + 1] += hashTable[i];
+    int start = 0;
+    for(int i = 0; i < tableSize; i++) {
+		start += hashTable[i];
+        hashTable[i] = start;
 	}
+	hashTable[tableSize] = start;
 
     for(Particle* p : particles) {
         int index = computeHashKey(p->pos);
-        int particleEntriesIndex = hashTable[index]--;
+        int particleEntriesIndex = --hashTable[index];
         particleEntries[particleEntriesIndex] = p->id;
 	}
 
@@ -173,6 +169,12 @@ int ParticleSystem::computeHashKey(const Vec3& position) {
 	double h = (xi * 92837111) ^ (yi * 689287499) ^ (zi * 283923481);
     return abs(int(h)) % tableSize;
 }
+
+int ParticleSystem::computeHashKeyFromCell(int xi, int yi, int zi) {
+    double h = (xi * 92837111) ^ (yi * 689287499) ^ (zi * 283923481);
+    return abs(int(h)) % tableSize;
+}
+
 std::unordered_set<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) {
     std::unordered_set<Particle*> neighbors;
 	int xi = computeGridCell(p->pos[0] - radius);
@@ -185,7 +187,7 @@ std::unordered_set<Particle*> ParticleSystem::getNeighbors(Particle* p, double r
     for(int x = xi; x <= x1; x++) {
         for(int y = yi; y <= y1; y++) {
             for(int z = zi; z <= z1; z++) {
-                int key = computeHashKey(Vec3(x, y, z));
+                int key = computeHashKeyFromCell(x, y, z);
                 int startIndex = hashTable[key];
                 int endIndex = hashTable[key + 1];
 

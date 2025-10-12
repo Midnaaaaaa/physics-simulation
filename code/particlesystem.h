@@ -64,7 +64,7 @@ public:
 
 
 private:
-    void clearSpatialHash();
+    int computeHashKeyFromCell(int xi, int yi, int zi);
     int computeHashKey(const Vec3& position);
 	int computeGridCell(const double axisPos);
 

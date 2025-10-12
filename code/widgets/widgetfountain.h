@@ -15,6 +15,7 @@ public:
     ~WidgetFountain();
 
     double getGravity()    const;
+	bool getParticleCollisions() const;
 
 signals:
     void updatedParameters();

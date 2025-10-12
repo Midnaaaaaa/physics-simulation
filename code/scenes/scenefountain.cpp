@@ -18,6 +18,11 @@ SceneFountain::~SceneFountain() {
     if (vaoSphereL) delete vaoSphereL;
     if (vaoCube)    delete vaoCube;
     if (fGravity)   delete fGravity;
+    
+    // delete particle colliders
+    for (ColliderSphere* collider : particleColliders) {
+        delete collider;
+    }
 }
 
 
@@ -73,6 +78,12 @@ void SceneFountain::reset()
     fGravity->clearInfluencedParticles();
     system.deleteParticles();
     deadParticles.clear();
+    
+    // delete and clear colliders
+    for (ColliderSphere* collider : particleColliders) {
+        delete collider;
+    }
+    particleColliders.clear();
 }
 
 
@@ -87,6 +98,8 @@ void SceneFountain::updateSimParams()
     kFriction = 0.1;
     maxParticleLife = 10.0;
     emitRate = 100;
+
+	particleCollisionsEnabled = widget->getParticleCollisions();
 }
 
 
@@ -188,18 +201,24 @@ void SceneFountain::update(double dt) {
     int emitParticles = std::max(1, int(std::round(emitRate * dt)));
     for (int i = 0; i < emitParticles; i++) {
         Particle* p;
+        ColliderSphere* pc;
+
         if (!deadParticles.empty()) {
             // reuse one dead particle
             p = deadParticles.front();
             deadParticles.pop_front();
+
+            pc = particleColliders[p->id];
         }
         else {
-            // create new particle
             p = new Particle();
+            p->id = system.getNumParticles();
             system.addParticle(p);
 
-            // don't forget to add particle to forces that affect it
             fGravity->addInfluencedParticle(p);
+
+            pc = new ColliderSphere();
+            particleColliders.push_back(pc);
         }
 
         p->color = Vec3(153/255.0, 217/255.0, 234/255.0);
@@ -211,6 +230,9 @@ void SceneFountain::update(double dt) {
         double z = Random::get(-20.0, 20.0);
         p->pos = Vec3(x, y, z) + fountainPos;
         p->vel = Vec3(0,0,0);
+
+        pc->setCenter(p->pos);
+        pc->setRadius(p->radius);
     }
 
     // integration step
@@ -234,6 +256,34 @@ void SceneFountain::update(double dt) {
 			colliderBox.resolveCollision(p, colInfo, kBounce, kFriction);
 		}
     }
+
+    if (particleCollisionsEnabled)
+    {
+        system.buildSpatialHash(2);
+        
+        for (Particle* p : system.getParticles()) {
+            particleColliders[p->id]->setCenter(p->pos);
+        }
+        
+        // Check collisions between particles
+        for (Particle* p : system.getParticles()) {
+            std::unordered_set<Particle*> nearParticles = system.getNeighbors(p, 2.0);
+            for (Particle* p1 : nearParticles) {
+                if (p->id < p1->id) {
+                    Collision colInfo;
+                    if (particleColliders[p->id]->testCollision(p1, colInfo)) {
+                        particleColliders[p->id]->resolveCollision(p1, colInfo, kBounce, kFriction);
+                        colInfo.normal = -colInfo.normal;
+                        particleColliders[p1->id]->resolveCollision(p, colInfo, kBounce, kFriction);
+                        
+                        particleColliders[p->id]->setCenter(p->pos);
+                        particleColliders[p1->id]->setCenter(p1->pos);
+                    }
+                }
+            }
+        }
+    }
+
 
     // check dead particles
     for (Particle* p : system.getParticles()) {

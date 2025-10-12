@@ -73,6 +73,50 @@ bool ColliderSphere::testCollision(const Particle* p, Collision& colInfo) const
 }
 
 
+/*
+ * Particle-Particle collision (both moving)
+ * Tests collision between two moving spherical particles
+ */
+bool ColliderSphere::testParticleParticleCollision(const Particle* p1, const Particle* p2, Collision& colInfo)
+{
+    // Relative motion: treat p1 as stationary and p2 moving with relative velocity
+    Vec3 relVel = (p2->pos - p2->prevPos) - (p1->pos - p1->prevPos);
+    Vec3 relPrevPos = p2->prevPos - p1->prevPos;
+    
+    double sumRadii = p1->radius + p2->radius;
+    
+    // Solve quadratic equation: ||relPrevPos + t*relVel|| = sumRadii
+    double a = relVel.dot(relVel);
+    double b = 2 * relVel.dot(relPrevPos);
+    double c = relPrevPos.dot(relPrevPos) - sumRadii * sumRadii;
+    
+    double discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) return false;
+    
+    double sqrtDisc = std::sqrt(discriminant);
+    double t1 = (-b - sqrtDisc) / (2 * a);
+    double t2 = (-b + sqrtDisc) / (2 * a);
+    
+    // We want the first collision in the time interval [0, 1]
+    double t = (t1 >= 0 && t1 <= 1) ? t1 : ((t2 >= 0 && t2 <= 1) ? t2 : -1);
+    if (t < 0) return false;
+    
+    // Calculate collision point and normal
+    Vec3 p1AtCollision = p1->prevPos + t * (p1->pos - p1->prevPos);
+    Vec3 p2AtCollision = p2->prevPos + t * (p2->pos - p2->prevPos);
+    
+    // Collision point is at the contact between the two spheres
+    Vec3 dir = (p2AtCollision - p1AtCollision);
+    double dist = dir.norm();
+    if (dist < 1e-8) return false; // Avoid division by zero
+    
+    colInfo.normal = dir / dist;  // Normal points from p1 to p2
+    colInfo.position = p1AtCollision + colInfo.normal * p1->radius;
+    
+    return true;
+}
+
+
 
 /*
  * AABB
