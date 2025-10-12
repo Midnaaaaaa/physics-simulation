@@ -173,8 +173,8 @@ int ParticleSystem::computeHashKey(const Vec3& position) {
 	double h = (xi * 92837111) ^ (yi * 689287499) ^ (zi * 283923481);
     return abs(int(h)) % tableSize;
 }
-std::vector<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) {
-    std::vector<Particle*> neighbors;
+std::unordered_set<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) {
+    std::unordered_set<Particle*> neighbors;
 	int xi = computeGridCell(p->pos[0] - radius);
 	int yi = computeGridCell(p->pos[1] - radius);
 	int zi = computeGridCell(p->pos[2] - radius);
@@ -194,7 +194,7 @@ std::vector<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) 
                     if(np->id != p->id) {
                         Vec3 diff = np->pos - p->pos;
                         if(diff.squaredNorm() <= radius * radius) {
-                            neighbors.push_back(np);
+							neighbors.insert(np);
                         }
                     }
                 }

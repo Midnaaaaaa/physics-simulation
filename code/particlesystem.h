@@ -5,6 +5,7 @@
 #include "defines.h"
 #include "particle.h"
 #include "forces.h"
+#include <unordered_set>
 
 class ParticleSystem
 {
@@ -59,7 +60,7 @@ public:
 	//Spatial Hashing
     
     void buildSpatialHash(double cellSize);
-	std::vector<Particle*> getNeighbors(Particle* p, double radius);
+	std::unordered_set<Particle*> getNeighbors(Particle* p, double radius);
 
 
 private:
