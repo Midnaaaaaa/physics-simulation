@@ -124,3 +124,82 @@ void ParticleSystem::setPreviousPositions(const Vecd& ppos) {
         particles[i]->prevPos[2] = ppos[3*i + 2];
     }
 }
+
+
+void ParticleSystem::clearSpatialHash() {
+	hashTable.clear();
+    particleEntries.clear();
+	spacing = 1.0;
+    if (particles.size() > 0) {
+        spacing = (particles[0]->radius) * 2.0;
+        tableSize = particles.size() * 2;
+    }
+}
+
+void ParticleSystem::buildSpatialHash(double cellSize) {
+	clearSpatialHash();
+
+	hashTable.resize(tableSize + 1, 0);
+	particleEntries.resize(particles.size(), 0);
+
+    for(Particle* p : particles) {
+        int key = computeHashKey(p->pos);
+        hashTable[key]++;
+	}
+
+	//Partial sum to get starting indices
+    for(int i = 0; i < hashTable.size(); i++) {
+        hashTable[i + 1] += hashTable[i];
+	}
+
+    for(Particle* p : particles) {
+        int index = computeHashKey(p->pos);
+        int particleEntriesIndex = hashTable[index]--;
+        particleEntries[particleEntriesIndex] = p->id;
+	}
+
+}
+
+int ParticleSystem::computeGridCell(const double axisPos) {
+    return int(floor(axisPos / spacing));
+}
+
+int ParticleSystem::computeHashKey(const Vec3& position) {
+
+    int xi = computeGridCell(position[0]);
+    int yi = computeGridCell(position[1]);
+    int zi = computeGridCell(position[2]);
+
+	double h = (xi * 92837111) ^ (yi * 689287499) ^ (zi * 283923481);
+    return abs(int(h)) % tableSize;
+}
+std::vector<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) {
+    std::vector<Particle*> neighbors;
+	int xi = computeGridCell(p->pos[0] - radius);
+	int yi = computeGridCell(p->pos[1] - radius);
+	int zi = computeGridCell(p->pos[2] - radius);
+
+	int x1 = computeGridCell(p->pos[0] + radius);
+	int y1 = computeGridCell(p->pos[1] + radius);
+    int z1 = computeGridCell(p->pos[2] + radius);
+    for(int x = xi; x <= x1; x++) {
+        for(int y = yi; y <= y1; y++) {
+            for(int z = zi; z <= z1; z++) {
+                int key = computeHashKey(Vec3(x, y, z));
+                int startIndex = hashTable[key];
+                int endIndex = hashTable[key + 1];
+
+                for(int i = startIndex; i < endIndex; i++) {
+                    Particle* np = particles[particleEntries[i]];
+                    if(np->id != p->id) {
+                        Vec3 diff = np->pos - p->pos;
+                        if(diff.squaredNorm() <= radius * radius) {
+                            neighbors.push_back(np);
+                        }
+                    }
+                }
+            }
+        }
+    }
+	return neighbors;
+}

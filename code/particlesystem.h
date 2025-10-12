@@ -56,10 +56,27 @@ public:
     void setTime(double t);
     const double* getTimePointer() const;
 
+	//Spatial Hashing
+    
+    void buildSpatialHash(double cellSize);
+	std::vector<Particle*> getNeighbors(Particle* p, double radius);
+
+
+private:
+    void clearSpatialHash();
+    int computeHashKey(const Vec3& position);
+	int computeGridCell(const double axisPos);
+
 protected:
     std::vector<Particle*>	particles;
     std::vector<Force*>		forces;
     double time = 0;
+
+	//Spatial Hashing
+	int tableSize = 0;
+	std::vector<int> hashTable;
+    std::vector<int> particleEntries;
+    double spacing = 1.0;
 };
 
 
