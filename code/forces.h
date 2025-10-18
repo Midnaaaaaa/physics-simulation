@@ -4,6 +4,8 @@
 #include <vector>
 #include "particle.h"
 
+class ParticleSystem;
+
 class Force
 {
 public:
@@ -123,6 +125,29 @@ protected:
     const Particle* attractor;
     double G = 6.6743e-11; // gravitational constant
     double a = 1, b = 1;
+};
+
+class ForceSPH : public Force
+{
+public:
+    ForceSPH() { radius = 3; system = nullptr; }
+    ForceSPH(double radius) { this->radius = radius; system = nullptr; }
+    ForceSPH(ParticleSystem* ps) { system = ps; radius = 3; }
+	ForceSPH(ParticleSystem* ps, double radius) { system = ps; this->radius = radius; }
+    virtual ~ForceSPH() {}
+    virtual void apply();
+    void setParticleSystem(ParticleSystem* ps) { system = ps; }
+    void setRadius(double r) { radius = r; }
+    double getRadius() const { return radius; }
+
+private:
+    double smoothingKernel(double r, double h);
+    Vec3 spikyKernelGradient(Vec3 ij, double dist, double h);
+    double viscosityKernelLaplacian(double r, double h);
+
+protected:
+    ParticleSystem* system;
+    double radius;
 };
 
 

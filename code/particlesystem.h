@@ -2,10 +2,11 @@
 #define PARTICLESYSTEM_H
 
 #include <vector>
+#include <unordered_set>
 #include "defines.h"
 #include "particle.h"
-#include "forces.h"
-#include <unordered_set>
+
+class Force;
 
 class ParticleSystem
 {
@@ -58,9 +59,8 @@ public:
     const double* getTimePointer() const;
 
 	//Spatial Hashing
-    
     void buildSpatialHash(double cellSize);
-	std::unordered_set<Particle*> getNeighbors(Particle* p, double radius);
+    void getNeighbors(Particle* p, double radius, std::vector<std::pair<Particle*, double>>& neighbors);
 
 
 private:
@@ -79,83 +79,6 @@ protected:
     std::vector<int> particleEntries;
     double spacing = 1.0;
 };
-
-
-inline int ParticleSystem::getStateSize() const {
-    return Particle::PhaseDimension * particles.size();
-}
-
-inline unsigned int ParticleSystem::getNumParticles() const {
-    return particles.size();
-}
-
-inline unsigned int ParticleSystem::getNumForces() const {
-    return forces.size();
-}
-
-inline const Particle* ParticleSystem::getParticle(unsigned int i) const {
-    return particles[i];
-}
-
-inline Particle* ParticleSystem::getParticle(unsigned int i) {
-    return particles[i];
-}
-
-inline const std::vector<Particle*>& ParticleSystem::getParticles() const {
-    return particles;
-}
-
-inline std::vector<Particle*>& ParticleSystem::getParticles() {
-    return particles;
-}
-
-inline const Force* ParticleSystem::getForce(unsigned int i) const {
-    return forces[i];
-}
-
-inline Force* ParticleSystem::getForce(unsigned int i) {
-    return forces[i];
-}
-
-inline void ParticleSystem::addParticle(Particle *p) {
-    particles.push_back(p);
-}
-
-inline void ParticleSystem::addForce(Force *f) {
-    forces.push_back(f);
-}
-
-inline void ParticleSystem::clearParticles() {
-    particles.clear();
-}
-
-inline void ParticleSystem::clearForces() {
-    forces.clear();
-}
-
-inline void ParticleSystem::deleteParticles() {
-    for (std::vector<Particle*>::iterator it = particles.begin(); it != particles.end(); it++)
-        delete (*it);
-    particles.clear();
-}
-
-inline void ParticleSystem::deleteForces() {
-    for (std::vector<Force*>::iterator it = forces.begin(); it != forces.end(); it++)
-        delete (*it);
-    forces.clear();
-}
-
-inline double ParticleSystem::getTime() const {
-    return time;
-}
-
-inline void ParticleSystem::setTime(double t) {
-    time = t;
-}
-
-inline const double* ParticleSystem::getTimePointer() const {
-    return &time;
-}
 
 
 #endif // PARTICLESYSTEM_H

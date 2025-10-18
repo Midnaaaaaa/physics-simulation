@@ -8,6 +8,7 @@
 #include "widgetnbody.h"
 #include "particlesystem.h"
 #include "integrators.h"
+#include "forces.h"
 
 class SceneNBody : public Scene
 {

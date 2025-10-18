@@ -267,17 +267,18 @@ void SceneFountain::update(double dt) {
         
         // Check collisions between particles
         for (Particle* p : system.getParticles()) {
-            std::unordered_set<Particle*> nearParticles = system.getNeighbors(p, 2.0);
-            for (Particle* p1 : nearParticles) {
-                if (p->id < p1->id) {
+            std::vector<std::pair<Particle*, double>> neighbors;
+            system.getNeighbors(p, 2.0, neighbors);
+            for (std::pair<Particle*, double> p1 : neighbors) {
+                if (p->id < p1.first->id) {
                     Collision colInfo;
-                    if (particleColliders[p->id]->testCollision(p1, colInfo)) {
-                        particleColliders[p->id]->resolveCollision(p1, colInfo, kBounce, kFriction);
+                    if (particleColliders[p->id]->testCollision(p1.first, colInfo)) {
+                        particleColliders[p->id]->resolveCollision(p1.first, colInfo, kBounce, kFriction);
                         colInfo.normal = -colInfo.normal;
-                        particleColliders[p1->id]->resolveCollision(p, colInfo, kBounce, kFriction);
+                        particleColliders[p1.first->id]->resolveCollision(p, colInfo, kBounce, kFriction);
                         
                         particleColliders[p->id]->setCenter(p->pos);
-                        particleColliders[p1->id]->setCenter(p1->pos);
+                        particleColliders[p1.first->id]->setCenter(p1.first->pos);
                     }
                 }
             }

@@ -149,6 +149,7 @@
     <addaction name="actionSceneRope"/>
     <addaction name="actionSceneCloth"/>
     <addaction name="actionSceneNBody"/>
+    <addaction name="actionFluid"/>
     <addaction name="actionSceneTestIntegrators"/>
     <addaction name="actionSceneTestColliders"/>
    </widget>
@@ -218,6 +219,11 @@
   <action name="actionSceneNBody">
    <property name="text">
     <string>NBody</string>
+   </property>
+  </action>
+  <action name="actionFluid">
+   <property name="text">
+    <string>Fluid</string>
    </property>
   </action>
  </widget>

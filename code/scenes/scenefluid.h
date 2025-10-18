@@ -1,23 +1,23 @@
-#ifndef SCENEFOUNTAIN_H
-#define SCENEFOUNTAIN_H
+#ifndef SCENEFLUID_H
+#define SCENEFLUID_H
 
 #include <QOpenGLShaderProgram>
 #include <QOpenGLVertexArrayObject>
 #include <list>
 #include "scene.h"
-#include "widgetfountain.h"
+#include "widgetfluid.h"
 #include "particlesystem.h"
 #include "integrators.h"
 #include "colliders.h"
 #include "forces.h"
 
-class SceneFountain : public Scene
+class SceneFluid : public Scene
 {
     Q_OBJECT
 
 public:
-    SceneFountain();
-    virtual ~SceneFountain();
+    SceneFluid();
+    virtual ~SceneFluid();
 
     virtual void initialize();
     virtual void reset();
@@ -26,6 +26,7 @@ public:
 
     virtual void mousePressed(const QMouseEvent* e, const Camera& cam);
     virtual void mouseMoved(const QMouseEvent* e, const Camera& cam);
+
 
     virtual void getSceneBounds(Vec3& bmin, Vec3& bmax) {
         bmin = Vec3(-110, -10, -110);
@@ -39,7 +40,7 @@ public slots:
     void updateSimParams();
 
 protected:
-    WidgetFountain* widget = nullptr;
+    WidgetFluid* widget = nullptr;
 
     QOpenGLShaderProgram* shader = nullptr;
     QOpenGLVertexArrayObject* vaoSphereL = nullptr;
@@ -48,24 +49,19 @@ protected:
     QOpenGLVertexArrayObject* vaoFloor   = nullptr;
     unsigned int numFacesSphereL = 0, numFacesSphereH = 0;
 
-    IntegratorEuler integrator;
+    IntegratorSymplecticEuler integrator;
     ParticleSystem system;
-    std::list<Particle*> deadParticles;
     ForceConstAcceleration* fGravity;
+	ForceSPH* fSPH;
 
-    ColliderPlane colliderFloor, colliderRamp;
-    ColliderSphere colliderSphere;
-    ColliderAABB   colliderBox;
-
-    std::vector<ColliderSphere*> particleColliders;
-    bool particleCollisionsEnabled = false;
-
-    double kBounce, kFriction;
-    double emitRate;
-    double maxParticleLife;
+	ColliderPlane colliderFloor, colliderWallLeft, colliderWallRight, colliderWallBack, colliderWallFront;
 
     Vec3 fountainPos;
     int mouseX, mouseY;
+	bool creatingParticles = false;
+	int particlesPerFrame = 10;
+
+    double kBounce, kFriction;
 };
 
-#endif // SCENEFOUNTAIN_H
+#endif // SCENEFLUID_H

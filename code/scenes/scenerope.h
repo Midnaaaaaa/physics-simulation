@@ -9,6 +9,7 @@
 #include "particlesystem.h"
 #include "integrators.h"
 #include "colliders.h"
+#include "forces.h"
 
 
 class SceneRope : public Scene

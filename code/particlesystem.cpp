@@ -1,4 +1,5 @@
 #include "particlesystem.h"
+#include "forces.h"
 
 Vecd ParticleSystem::getState() const {
     Vecd state(this->getStateSize());
@@ -175,9 +176,8 @@ int ParticleSystem::computeHashKeyFromCell(int xi, int yi, int zi) {
     return abs(int(h)) % tableSize;
 }
 
-std::unordered_set<Particle*> ParticleSystem::getNeighbors(Particle* p, double radius) {
-    std::unordered_set<Particle*> neighbors;
-	int xi = computeGridCell(p->pos[0] - radius);
+void ParticleSystem::getNeighbors(Particle* p, double radius, std::vector<std::pair<Particle*, double>>& neighbors) {
+    int xi = computeGridCell(p->pos[0] - radius);
 	int yi = computeGridCell(p->pos[1] - radius);
 	int zi = computeGridCell(p->pos[2] - radius);
 
@@ -195,13 +195,90 @@ std::unordered_set<Particle*> ParticleSystem::getNeighbors(Particle* p, double r
                     Particle* np = particles[particleEntries[i]];
                     if(np->id != p->id) {
                         Vec3 diff = np->pos - p->pos;
-                        if(diff.squaredNorm() <= radius * radius) {
-							neighbors.insert(np);
+						double dist = diff.norm();
+                        if(dist <= radius) {
+                            neighbors.push_back({ np, dist });
                         }
                     }
                 }
             }
         }
     }
-	return neighbors;
+}
+
+
+int ParticleSystem::getStateSize() const {
+    return Particle::PhaseDimension * particles.size();
+}
+
+unsigned int ParticleSystem::getNumParticles() const {
+    return particles.size();
+}
+
+unsigned int ParticleSystem::getNumForces() const {
+    return forces.size();
+}
+
+const Particle* ParticleSystem::getParticle(unsigned int i) const {
+    return particles[i];
+}
+
+Particle* ParticleSystem::getParticle(unsigned int i) {
+    return particles[i];
+}
+
+const std::vector<Particle*>& ParticleSystem::getParticles() const {
+    return particles;
+}
+
+std::vector<Particle*>& ParticleSystem::getParticles() {
+    return particles;
+}
+
+const Force* ParticleSystem::getForce(unsigned int i) const {
+    return forces[i];
+}
+
+Force* ParticleSystem::getForce(unsigned int i) {
+    return forces[i];
+}
+
+void ParticleSystem::addParticle(Particle* p) {
+    particles.push_back(p);
+}
+
+void ParticleSystem::addForce(Force* f) {
+    forces.push_back(f);
+}
+
+void ParticleSystem::clearParticles() {
+    particles.clear();
+}
+
+void ParticleSystem::clearForces() {
+    forces.clear();
+}
+
+void ParticleSystem::deleteParticles() {
+    for (std::vector<Particle*>::iterator it = particles.begin(); it != particles.end(); it++)
+        delete (*it);
+    particles.clear();
+}
+
+void ParticleSystem::deleteForces() {
+    for (std::vector<Force*>::iterator it = forces.begin(); it != forces.end(); it++)
+        delete (*it);
+    forces.clear();
+}
+
+double ParticleSystem::getTime() const {
+    return time;
+}
+
+void ParticleSystem::setTime(double t) {
+    time = t;
+}
+
+const double* ParticleSystem::getTimePointer() const {
+    return &time;
 }

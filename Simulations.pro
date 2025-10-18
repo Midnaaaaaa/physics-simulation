@@ -3,6 +3,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 greaterThan(QT_MAJOR_VERSION, 5): QT += openglwidgets
 
 CONFIG += c++17
+CONFIG += console
 
 INCLUDEPATH += code
 INCLUDEPATH += code/scenes
@@ -36,6 +37,8 @@ SOURCES += \
     code/widgets/widgettestcolliders.cpp \
     code/widgets/widgettestintegrators.cpp \
     code/widgets/widgetnbody.cpp \
+    code/widgets/widgetfluid.cpp \
+    code/scenes/scenefluid.cpp \
 
 HEADERS += \
     code/camera.h \
@@ -64,6 +67,8 @@ HEADERS += \
     code/widgets/widgettestcolliders.h \
     code/widgets/widgettestintegrators.h \
     code/widgets/widgetnbody.h \
+    code/widgets/widgetfluid.h \
+    code/scenes/scenefluid.h \
 
 
 FORMS += \
@@ -75,5 +80,7 @@ FORMS += \
     forms/widgettestcolliders.ui \
     forms/widgettestintegrators.ui \
     forms/widgetnbody.ui \
+    forms/widgetfluid.ui \
+
 
 RESOURCES += shaders.qrc
