@@ -18,6 +18,8 @@ SceneFluid::~SceneFluid() {
     if (vaoSphereL) delete vaoSphereL;
     if (vaoCube)    delete vaoCube;
     if (fGravity)   delete fGravity;
+    if (fGravitational) delete fGravitational;
+    if (attractorParticle) delete attractorParticle;
 }
 
 
@@ -45,13 +47,17 @@ void SceneFluid::initialize() {
     fSPH->setRadius(4);
     system.addForce(fSPH);
 
+    fGravitational = new ForceGravitation();
+    fGravitational->setConstant(100.0);
+    system.addForce(fGravitational);
+
     // scene description
     fountainPos = Vec3(0, 80, 0);    
     colliderFloor.setPlane(Vec3(0, 1, 0), 0);    
-	colliderWallLeft.setPlane(Vec3(1, 0, 0), -80);
-	colliderWallRight.setPlane(Vec3(-1, 0, 0), -80);
-	colliderWallBack.setPlane(Vec3(0, 0, 1), -80);
-    colliderWallFront.setPlane(Vec3(0, 0, -1), -80);
+	colliderWallLeft.setPlane(Vec3(1, 0, 0), -50);  // Expanded to -60
+	colliderWallRight.setPlane(Vec3(-1, 0, 0), -50); // Expanded to -60
+	colliderWallBack.setPlane(Vec3(0, 0, 1), -10);   // Expanded to -30
+    colliderWallFront.setPlane(Vec3(0, 0, -1), -10); // Expanded to -30
 }
 
 
@@ -66,17 +72,24 @@ void SceneFluid::reset()
     // erase all particles
     fGravity->clearInfluencedParticles();
 	fSPH->clearInfluencedParticles();
+    fGravitational->clearInfluencedParticles();
     system.deleteParticles();
 
-    // Define the dimensions of the cube of particles
-    int particlesPerDim = 15; // This will create 15*15*15 = 3375 particles
-    double spacing = 2;     // Spacing between particles (should be ~ radius/2)
+    if (attractorParticle) {
+        delete attractorParticle;
+        attractorParticle = nullptr;
+    }
 
-    // Calculate the starting position to center the cube
+    int particlesPerDim = 10;
+    double spacing = 2.0;
+
     double cubeSize = (particlesPerDim - 1) * spacing;
-    double startX = -cubeSize / 2.0;
-    double startY = 10.0; // Start slightly above the floor
-    double startZ = -cubeSize / 2.0;
+    double startY = 1;
+
+    double separation = 30;
+
+    double startX1 = -separation - cubeSize / 2.0;
+    double startZ1 = -cubeSize / 2.0;
 
     for (int i = 0; i < particlesPerDim; ++i) {
         for (int j = 0; j < particlesPerDim; ++j) {
@@ -91,14 +104,39 @@ void SceneFluid::reset()
                 p->elasticity = 0.3;
                 p->friction = 0.1;
 
-                // Position particles in a grid
-                double x = startX + i * spacing;
+                double x = startX1 + i * spacing;
                 double y = startY + j * spacing;
-                double z = startZ + k * spacing;
+                double z = startZ1 + k * spacing;
                 p->pos = Vec3(x, y, z);
-
                 p->vel = Vec3(0, 0, 0);
-                p->color = Vec3(153 / 255.0, 217 / 255.0, 234 / 255.0);
+                p->color = Vec3(0.0, 0.0, 0.5);
+                p->mass = 1;
+            }
+        }
+    }
+
+    double startX2 = separation - cubeSize / 2.0;
+    double startZ2 = -cubeSize / 2.0;
+
+    for (int i = 0; i < particlesPerDim; ++i) {
+        for (int j = 0; j < particlesPerDim; ++j) {
+            for (int k = 0; k < particlesPerDim; ++k) {
+                Particle* p = new Particle();
+                p->id = system.getNumParticles();
+                system.addParticle(p);
+                fGravity->addInfluencedParticle(p);
+                fSPH->addInfluencedParticle(p);
+
+                p->radius = 1.0;
+                p->elasticity = 0.3;
+                p->friction = 0.1;
+
+                double x = startX2 + i * spacing;
+                double y = startY + j * spacing;
+                double z = startZ2 + k * spacing;
+                p->pos = Vec3(x, y, z);
+                p->vel = Vec3(0, 0, 0);
+                p->color = Vec3(0.0, 0.0, 0.5);
                 p->mass = 1;
             }
         }
@@ -212,35 +250,28 @@ void SceneFluid::paint(const Camera& camera) {
 
         glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereL, GL_UNSIGNED_INT, 0);
     }
+
+    // draw the attractor particle if it exists
+    if (attractorParticle) {
+        Vec3   p = attractorParticle->pos;
+        Vec3   c = attractorParticle->color;
+        double r = attractorParticle->radius;
+
+        modelMat = QMatrix4x4();
+        modelMat.translate(p[0], p[1], p[2]);
+        modelMat.scale(r);
+        shader->setUniformValue("ModelMatrix", modelMat);
+
+        shader->setUniformValue("matdiff", GLfloat(c[0]), GLfloat(c[1]), GLfloat(c[2]));
+        shader->setUniformValue("matspec", 1.0f, 1.0f, 1.0f);
+        shader->setUniformValue("matshin", 100.f);
+
+        glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereL, GL_UNSIGNED_INT, 0);
+    }
 }
 
 
 void SceneFluid::update(double dt) {
-
-    if (creatingParticles) {
-        for (size_t i = 0; i < particlesPerFrame; i++)
-        {
-			Particle* p = new Particle();
-			p->id = system.getNumParticles();
-			system.addParticle(p);
-			fGravity->addInfluencedParticle(p);
-			fSPH->addInfluencedParticle(p);
-			
-            p->radius = 1.0;
-
-            p->elasticity = 0;
-            p->friction = 0;
-            double x = Random::get(-20.0, 20.0);
-            double y = 0;
-            double z = Random::get(-20.0, 20.0);
-            p->pos = Vec3(x, y, z) + fountainPos;
-            p->vel = Vec3(0, 0, 0);
-            p->color = Vec3(153 / 255.0, 217 / 255.0, 234 / 255.0);
-			p->mass = 1.0;  // Consistent with reset mass
-        }
-    }
-
-
     // integration step
     Vecd ppos = system.getPositions();
     integrator.step(system, dt);
@@ -267,7 +298,7 @@ void SceneFluid::update(double dt) {
     }
 }
 
-void SceneFluid::mousePressed(const QMouseEvent* e, const Camera&)
+void SceneFluid::mousePressed(const QMouseEvent* e, const Camera& cam)
 {
     mouseX = e->pos().x();
     mouseY = e->pos().y();
@@ -280,13 +311,33 @@ void SceneFluid::mouseMoved(const QMouseEvent* e, const Camera& cam)
     mouseX = e->pos().x();
     mouseY = e->pos().y();
 
-    Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, cam.getEyeDistance());
-
-    // example
+    // Move the attractor particle with right button drag
     if (e->buttons() & Qt::RightButton) {
-        if (!e->modifiers()) {
-            // move fountain
-            fountainPos += disp;
-        }
+        if (!attractorParticle) {
+			attractorParticle = new Particle();
+			attractorParticle->pos = cam.getEye();
+			attractorParticle->vel = Vec3(0, 0, 0);
+			attractorParticle->mass = 100;
+			attractorParticle->radius = 2.0;
+			attractorParticle->color = Vec3(1.0, 1.0, 0.0);
+
+			fGravitational->setAttractor(attractorParticle);
+
+			for (Particle* p : system.getParticles()) {
+				fGravitational->addInfluencedParticle(p);
+			}
+		}
+        double d = -(attractorParticle->pos - cam.getPos()).dot(cam.zAxis());
+        Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
+        attractorParticle->pos += disp;
+        
+    }
+    else {
+        fGravitational->clearInfluencedParticles();
+        fGravitational->setAttractor(nullptr);
+        delete attractorParticle;
+        attractorParticle = nullptr;
     }
 }
+
+

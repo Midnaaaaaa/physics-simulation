@@ -130,14 +130,14 @@ protected:
 class ForceSPH : public Force
 {
 public:
-    ForceSPH() { radius = 3; system = nullptr; }
-    ForceSPH(double radius) { this->radius = radius; system = nullptr; }
+    ForceSPH() { radius = 3; system = nullptr; smoothingKernelConstant = (315.0 / (64.0 * M_PI * pow(radius, 9))); spikyKernelConstant = -45.0 / (M_PI * pow(radius, 6)); viscosityKernelConstant = (45.0 / (M_PI * pow(radius, 6))); }
+    ForceSPH(double radius) { this->radius = radius; system = nullptr; smoothingKernelConstant = (315.0 / (64.0 * M_PI * pow(radius, 9))); spikyKernelConstant = -45.0 / (M_PI * pow(radius, 6)); viscosityKernelConstant = (45.0 / (M_PI * pow(radius, 6)));}
     ForceSPH(ParticleSystem* ps) { system = ps; radius = 3; }
 	ForceSPH(ParticleSystem* ps, double radius) { system = ps; this->radius = radius; }
     virtual ~ForceSPH() {}
     virtual void apply();
     void setParticleSystem(ParticleSystem* ps) { system = ps; }
-    void setRadius(double r) { radius = r; }
+    void setRadius(double r) { radius = r; smoothingKernelConstant = (315.0 / (64.0 * M_PI * pow(radius, 9))); spikyKernelConstant = -45.0 / (M_PI * pow(radius, 6)); viscosityKernelConstant = (45.0 / (M_PI * pow(radius, 6)));}
     double getRadius() const { return radius; }
 
 private:
@@ -148,6 +148,9 @@ private:
 protected:
     ParticleSystem* system;
     double radius;
+    double smoothingKernelConstant;
+    double spikyKernelConstant;
+    double viscosityKernelConstant;
 };
 
 

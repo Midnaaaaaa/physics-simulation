@@ -59,9 +59,10 @@ void ForceSPH::apply() {
     std::vector<std::unordered_map<Particle*, double>> neighborsList(system->getNumParticles());
 
     double pressureMultiplier = 200;
-    double restDensity = 0.1;
+    double restDensity = 0.05;
+    double mu = 0.1;
 
-    system->buildSpatialHash(radius);
+    system->buildSpatialHash(radius*3);
 
     for (Particle* p : system->getParticles()) {
         std::unordered_map<Particle*, double> neighbors;
@@ -76,21 +77,27 @@ void ForceSPH::apply() {
     }
 
     for (Particle* p : system->getParticles()) {
-        pressures[p->id] = std::max(0.0, pressureMultiplier * (densities[p->id] - restDensity));
+        pressures[p->id] = pressureMultiplier * (densities[p->id] - restDensity);
     }
 
     //Compute pressions gradients
     for (Particle* p : system->getParticles()) {
         std::unordered_map<Particle*, double>& neighbors = neighborsList[p->id];
         Vec3 forcePressure = Vec3(0, 0, 0);
+        Vec3 forceViscosity = Vec3(0, 0, 0);
         for (const auto& [q, dist] : neighbors) {
-            //forcePressure += -q.first->mass * ((pressures[p->id] / (densities[p->id] * densities[p->id])) + (pressures[q.first->id] / (densities[q.first->id] * densities[q.first->id]))) * spikyKernelGradient(p->pos - q.first->pos, q.second, radius);
-            forcePressure += -q->mass * (pressures[p->id] + pressures[q->id]) / (2 * densities[q->id]) * spikyKernelGradient(p->pos - q->pos, dist, radius);
+            double P_ij = -q->mass * ((pressures[p->id] / (densities[p->id] * densities[p->id])) + pressures[q->id] / (densities[q->id] * densities[q->id]));
+
+            forcePressure += P_ij * spikyKernelGradient(p->pos - q->pos, dist, radius);
+            
+            Vec3 v_ij = mu * q->mass * (q->vel - p->vel) / (densities[q->id] * densities[p->id]);
+            
+            forceViscosity += v_ij * viscosityKernelLaplacian(dist, radius);
         }
 
-        p->force += forcePressure / densities[p->id];
+        p->force += forcePressure + forceViscosity;
 
-        p->color = Vec3((densities[p->id] / (restDensity)), 0, 1 - (densities[p->id] / (restDensity)));
+        p->color = Vec3(1-(densities[p->id] / (restDensity)), 0, (densities[p->id] / (restDensity)));
     }
 
     double avgDensity = 0.0;
@@ -101,7 +108,7 @@ void ForceSPH::apply() {
 
     avgDensity /= count;
 
-    qDebug() << "Average density:" << avgDensity;
+    //qDebug() << "Average density:" << avgDensity;
 
 
 }
@@ -110,15 +117,15 @@ void ForceSPH::apply() {
 
 double ForceSPH::smoothingKernel(double r, double h) {
     double q = h * h - r * r;
-    return (315.0 / (64.0 * M_PI * pow(h, 9))) * q * q * q;
+    return smoothingKernelConstant * (q * q * q);
 }
 
 Vec3 ForceSPH::spikyKernelGradient(Vec3 ij, double dist, double h) {
     double coef = -45.0 / (M_PI * pow(h, 6));
     double factor = (h - dist) * (h - dist);
-    return ij * (coef * factor / dist);  // Normalized direction
+    return ij * (spikyKernelConstant * factor / dist);  // Normalized direction
 }
 
 double ForceSPH::viscosityKernelLaplacian(double r, double h) {
-    return (45.0 / (M_PI * pow(h, 6))) * (h - r);
+    return viscosityKernelConstant * (h - r);
 }

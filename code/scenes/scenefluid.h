@@ -11,6 +11,7 @@
 #include "colliders.h"
 #include "forces.h"
 
+
 class SceneFluid : public Scene
 {
     Q_OBJECT
@@ -53,6 +54,7 @@ protected:
     ParticleSystem system;
     ForceConstAcceleration* fGravity;
 	ForceSPH* fSPH;
+    ForceGravitation* fGravitational;
 
 	ColliderPlane colliderFloor, colliderWallLeft, colliderWallRight, colliderWallBack, colliderWallFront;
 
@@ -61,7 +63,11 @@ protected:
 	bool creatingParticles = false;
 	int particlesPerFrame = 10;
 
+    bool wallCollision = true;
+
     double kBounce, kFriction;
+    
+    Particle* attractorParticle = nullptr;
 };
 
 #endif // SCENEFLUID_H
