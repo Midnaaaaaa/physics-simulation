@@ -176,7 +176,7 @@ int ParticleSystem::computeHashKeyFromCell(int xi, int yi, int zi) {
     return abs(int(h)) % tableSize;
 }
 
-void ParticleSystem::getNeighbors(Particle* p, double radius, std::vector<std::pair<Particle*, double>>& neighbors) {
+void ParticleSystem::getNeighbors(Particle* p, double radius, std::unordered_map<Particle*, double>& neighbors) {
     int xi = computeGridCell(p->pos[0] - radius);
 	int yi = computeGridCell(p->pos[1] - radius);
 	int zi = computeGridCell(p->pos[2] - radius);
@@ -197,7 +197,7 @@ void ParticleSystem::getNeighbors(Particle* p, double radius, std::vector<std::p
                         Vec3 diff = np->pos - p->pos;
 						double dist = diff.norm();
                         if(dist <= radius) {
-                            neighbors.push_back({ np, dist });
+                            neighbors[np] = dist;
                         }
                     }
                 }

@@ -60,7 +60,7 @@ public:
 
 	//Spatial Hashing
     void buildSpatialHash(double cellSize);
-    void getNeighbors(Particle* p, double radius, std::vector<std::pair<Particle*, double>>& neighbors);
+    void getNeighbors(Particle* p, double radius, std::unordered_map<Particle*, double>& neighbors);
 
 
 private:

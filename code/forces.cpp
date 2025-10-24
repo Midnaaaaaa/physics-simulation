@@ -56,7 +56,7 @@ void ForceGravitation::apply() {
 void ForceSPH::apply() {
     std::vector<double> densities(system->getNumParticles(), 0.0);
     std::vector<double> pressures(system->getNumParticles(), 0.0);
-    std::vector<std::vector<std::pair<Particle*, double>>> neighborsList(system->getNumParticles());
+    std::vector<std::unordered_map<Particle*, double>> neighborsList(system->getNumParticles());
 
     double pressureMultiplier = 200;
     double restDensity = 0.1;
@@ -64,11 +64,11 @@ void ForceSPH::apply() {
     system->buildSpatialHash(radius);
 
     for (Particle* p : system->getParticles()) {
-        std::vector<std::pair<Particle*, double>> neighbors;
+        std::unordered_map<Particle*, double> neighbors;
         system->getNeighbors(p, radius, neighbors);
         double density = p->mass * smoothingKernel(0, radius);
-        for (std::pair<Particle*, double> q : neighbors) {
-            density += q.first->mass * smoothingKernel(q.second, radius);
+        for (const auto& [q, dist] : neighbors) {
+            density += q->mass * smoothingKernel(dist, radius);
         }
 
         neighborsList[p->id] = neighbors;
@@ -81,11 +81,11 @@ void ForceSPH::apply() {
 
     //Compute pressions gradients
     for (Particle* p : system->getParticles()) {
-        std::vector<std::pair<Particle*, double>> neighbors = neighborsList[p->id];
+        std::unordered_map<Particle*, double>& neighbors = neighborsList[p->id];
         Vec3 forcePressure = Vec3(0, 0, 0);
-        for (std::pair<Particle*, double> q : neighbors) {
+        for (const auto& [q, dist] : neighbors) {
             //forcePressure += -q.first->mass * ((pressures[p->id] / (densities[p->id] * densities[p->id])) + (pressures[q.first->id] / (densities[q.first->id] * densities[q.first->id]))) * spikyKernelGradient(p->pos - q.first->pos, q.second, radius);
-            forcePressure += -q.first->mass * (pressures[p->id] + pressures[q.first->id]) / (2 * densities[q.first->id]) * spikyKernelGradient(p->pos - q.first->pos, q.second, radius);
+            forcePressure += -q->mass * (pressures[p->id] + pressures[q->id]) / (2 * densities[q->id]) * spikyKernelGradient(p->pos - q->pos, dist, radius);
         }
 
         p->force += forcePressure / densities[p->id];
