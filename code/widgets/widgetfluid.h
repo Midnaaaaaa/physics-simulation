@@ -15,7 +15,7 @@ public:
     ~WidgetFluid();
 
     double getGravity()    const;
-	bool getParticleCollisions() const;
+	double getAttractorMass() const;
 
 signals:
     void updatedParameters();

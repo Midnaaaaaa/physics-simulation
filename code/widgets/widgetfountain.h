@@ -15,7 +15,8 @@ public:
     ~WidgetFountain();
 
     double getGravity()    const;
-	bool getParticleCollisions() const;
+    double getKElastic() const;
+    double getKFriction() const;
 
 signals:
     void updatedParameters();

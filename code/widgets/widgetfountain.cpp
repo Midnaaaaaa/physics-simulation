@@ -20,6 +20,10 @@ double WidgetFountain::getGravity() const {
     return ui->gravity->value();
 }
 
-bool WidgetFountain::getParticleCollisions() const {
-	return ui->particleCollision->isChecked();
+double WidgetFountain::getKElastic() const {
+	return ui->kelastic->value();
+}
+
+double WidgetFountain::getKFriction() const {
+    return ui->kfriction->value();
 }

@@ -27,6 +27,8 @@ public:
     virtual void mousePressed(const QMouseEvent* e, const Camera& cam);
     virtual void mouseMoved(const QMouseEvent* e, const Camera& cam);
 
+    Vec3 getHeatmapColor(int collisionCount, double baseHue, int maxCollisions = 500);
+
     virtual void getSceneBounds(Vec3& bmin, Vec3& bmax) {
         bmin = Vec3(-110, -10, -110);
         bmax = Vec3( 110, 100,  110);
@@ -53,12 +55,10 @@ protected:
     std::list<Particle*> deadParticles;
     ForceConstAcceleration* fGravity;
 
-    ColliderPlane colliderFloor, colliderRamp;
     ColliderSphere colliderSphere;
     ColliderAABB   colliderBox;
+    ColliderPlane colliderPlane;  // Plano grande debajo del tablero
 
-    std::vector<ColliderSphere*> particleColliders;
-    bool particleCollisionsEnabled = false;
 
     double kBounce, kFriction;
     double emitRate;
@@ -66,6 +66,14 @@ protected:
 
     Vec3 fountainPos;
     int mouseX, mouseY;
+    
+    std::vector<ColliderAABB> boardBoxes;
+    std::vector<int> boardCollisions;
+    std::vector<Vec3> boardColors;
+    std::vector<double> boardBaseHues;
+    
+    int planeCollisions = 0;
+    Vec3 planeColor;
 };
 
 #endif // SCENEFOUNTAIN_H

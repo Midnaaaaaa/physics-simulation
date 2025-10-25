@@ -20,6 +20,6 @@ double WidgetFluid::getGravity() const {
     return ui->gravity->value();
 }
 
-bool WidgetFluid::getParticleCollisions() const {
-	return ui->particleCollision->isChecked();
+double WidgetFluid::getAttractorMass() const {
+    return ui->attractorMass->value();
 }

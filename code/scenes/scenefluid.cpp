@@ -54,10 +54,10 @@ void SceneFluid::initialize() {
     // scene description
     fountainPos = Vec3(0, 80, 0);    
     colliderFloor.setPlane(Vec3(0, 1, 0), 0);    
-	colliderWallLeft.setPlane(Vec3(1, 0, 0), -50);  // Expanded to -60
-	colliderWallRight.setPlane(Vec3(-1, 0, 0), -50); // Expanded to -60
-	colliderWallBack.setPlane(Vec3(0, 0, 1), -10);   // Expanded to -30
-    colliderWallFront.setPlane(Vec3(0, 0, -1), -10); // Expanded to -30
+	colliderWallLeft.setPlane(Vec3(1, 0, 0), -50);
+	colliderWallRight.setPlane(Vec3(-1, 0, 0), -50);
+	colliderWallBack.setPlane(Vec3(0, 0, 1), -10);
+    colliderWallFront.setPlane(Vec3(0, 0, -1), -10);
 }
 
 
@@ -149,6 +149,10 @@ void SceneFluid::updateSimParams()
     // get gravity from UI and update force
     double g = widget->getGravity();
     fGravity->setAcceleration(Vec3(0, -g, 0));
+
+    attractorMass = widget->getAttractorMass();
+    if(attractorParticle)
+		attractorParticle->mass = attractorMass;
 }
 
 
@@ -295,6 +299,11 @@ void SceneFluid::update(double dt) {
         if (colliderWallRight.testCollision(p, colInfo)) {
             colliderWallRight.resolveCollision(p, colInfo, p->elasticity, p->friction);
         }
+        if (attractorParticle) {
+            if(colliderAttractor->testCollision(p, colInfo)) {
+                colliderAttractor->resolveCollision(p, colInfo, p->elasticity, p->friction);
+			}
+        }
     }
 }
 
@@ -317,9 +326,11 @@ void SceneFluid::mouseMoved(const QMouseEvent* e, const Camera& cam)
 			attractorParticle = new Particle();
 			attractorParticle->pos = cam.getEye();
 			attractorParticle->vel = Vec3(0, 0, 0);
-			attractorParticle->mass = 100;
+			attractorParticle->mass = attractorMass;
 			attractorParticle->radius = 2.0;
 			attractorParticle->color = Vec3(1.0, 1.0, 0.0);
+
+			colliderAttractor = new ColliderSphere(attractorParticle->pos, attractorParticle->radius);
 
 			fGravitational->setAttractor(attractorParticle);
 
@@ -330,6 +341,7 @@ void SceneFluid::mouseMoved(const QMouseEvent* e, const Camera& cam)
         double d = -(attractorParticle->pos - cam.getPos()).dot(cam.zAxis());
         Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
         attractorParticle->pos += disp;
+		colliderAttractor->setCenter(attractorParticle->pos);
         
     }
     else {
@@ -337,6 +349,8 @@ void SceneFluid::mouseMoved(const QMouseEvent* e, const Camera& cam)
         fGravitational->setAttractor(nullptr);
         delete attractorParticle;
         attractorParticle = nullptr;
+
+		colliderAttractor = nullptr;
     }
 }
 

@@ -68,6 +68,8 @@ protected:
     double kBounce, kFriction;
     
     Particle* attractorParticle = nullptr;
+	ColliderSphere* colliderAttractor;
+    double attractorMass;
 };
 
 #endif // SCENEFLUID_H

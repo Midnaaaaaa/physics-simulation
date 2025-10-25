@@ -2,6 +2,7 @@
 #include "glutils.h"
 #include "model.h"
 #include <QOpenGLFunctions_3_3_Core>
+#include <QColor>
 
 
 SceneFountain::SceneFountain() {
@@ -19,10 +20,7 @@ SceneFountain::~SceneFountain() {
     if (vaoCube)    delete vaoCube;
     if (fGravity)   delete fGravity;
     
-    // delete particle colliders
-    for (ColliderSphere* collider : particleColliders) {
-        delete collider;
-    }
+
 }
 
 
@@ -58,11 +56,42 @@ void SceneFountain::initialize() {
 
     // scene description
     fountainPos = Vec3(0, 80, 0);    
-    colliderFloor.setPlane(Vec3(0, 1, 0), 0);    
-    colliderRamp.setPlane(Vec3(0, std::sqrt(3.0)/2.0, 0.5), 6);
-    colliderSphere.setCenter(Vec3(0,0,0));
+    colliderSphere.setCenter(Vec3(0,100,0));
     colliderSphere.setRadius(20);
     colliderBox.setFromBounds(Vec3(30,0,20), Vec3(50,10,60));
+    
+    colliderPlane.setPlane(Vec3(0, 1, 0), -0.5);
+    
+    boardBoxes.clear();
+    boardCollisions.clear();
+    boardColors.clear();
+    boardBaseHues.clear();
+    
+    int gridSize = 20;
+    double boxWidth = 10.0;
+    double boxDepth = 10.0;
+    double boxHeight = 25.0;
+    double spacing = boxWidth;
+    double totalWidth = gridSize * spacing;
+    
+    for (int i = 0; i < gridSize; i++) {
+        for (int j = 0; j < gridSize; j++) {
+            double x = (i * spacing) - (totalWidth / 2.0) + (boxWidth / 2.0);
+            double z = (j * spacing) - (totalWidth / 2.0) + (boxDepth / 2.0);
+            double y = boxHeight;
+            
+            Vec3 center(x, y, z);
+            Vec3 size(boxWidth, boxHeight, boxDepth);
+            
+            ColliderAABB box;
+            box.setFromCenterSize(center, size);
+            
+            boardBoxes.push_back(box);
+            boardCollisions.push_back(0);
+            boardColors.push_back(Vec3(0.0, 0.0, 0.0));
+            boardBaseHues.push_back(0.0);
+        }
+    }
 }
 
 
@@ -79,11 +108,25 @@ void SceneFountain::reset()
     system.deleteParticles();
     deadParticles.clear();
     
-    // delete and clear colliders
-    for (ColliderSphere* collider : particleColliders) {
-        delete collider;
+    
+    planeCollisions = 0;
+    planeColor = Vec3(0.0, 0.0, 0.0);
+    
+    for (size_t i = 0; i < boardCollisions.size(); i++) {
+        boardCollisions[i] = 0;
+        
+        Vec3 boxCenter = boardBoxes[i].getCenter();
+        Vec3 fountainPosXZ = Vec3(fountainPos[0], 0, fountainPos[2]);
+        Vec3 boxCenterXZ = Vec3(boxCenter[0], 0, boxCenter[2]);
+        double distance = (boxCenterXZ - fountainPosXZ).norm();
+        
+        double maxDistance = 150.0;
+        
+        double t = std::min(1.0, distance / maxDistance);
+        
+        boardBaseHues[i] = 240.0 - (t * 240.0);
+        boardColors[i] = Vec3(0.0, 0.0, 0.0);
     }
-    particleColliders.clear();
 }
 
 
@@ -94,12 +137,10 @@ void SceneFountain::updateSimParams()
     fGravity->setAcceleration(Vec3(0, -g, 0));
 
     // get other relevant UI values and update simulation params
-    kBounce = 0.5;
-    kFriction = 0.1;
-    maxParticleLife = 10.0;
+    kBounce = widget->getKElastic() + 0.001;
+    kFriction = widget->getKFriction();
+    maxParticleLife = 20;
     emitRate = 100;
-
-	particleCollisionsEnabled = widget->getParticleCollisions();
 }
 
 
@@ -128,23 +169,16 @@ void SceneFountain::paint(const Camera& camera) {
     shader->setUniformValueArray("lightPos", lightPosCam, numLights);
     shader->setUniformValueArray("lightColor", lightColor, numLights);
 
-    // draw floor
-    vaoFloor->bind();
     QMatrix4x4 modelMat;
-    modelMat.scale(100, 1, 100);
+    
+    vaoFloor->bind();
+    modelMat = QMatrix4x4();
+    modelMat.translate(0, -0.5, 0);
+    modelMat.scale(200, 1, 200);
     shader->setUniformValue("ModelMatrix", modelMat);
-    shader->setUniformValue("matdiff", 0.8f, 0.8f, 0.8f);
+    shader->setUniformValue("matdiff", GLfloat(planeColor[0]), GLfloat(planeColor[1]), GLfloat(planeColor[2]));
     shader->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
     shader->setUniformValue("matshin", 0.0f);
-    glFuncs->glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // draw ramp
-    modelMat = QMatrix4x4();
-    modelMat.rotate(30.0, QVector3D(1, 0, 0));
-    modelMat.translate(0, -6, 0);
-    modelMat.scale(100, 1, 100);
-    modelMat.translate(0, 0, -1);
-    shader->setUniformValue("ModelMatrix", modelMat);
     glFuncs->glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // draw the particles
@@ -173,23 +207,29 @@ void SceneFountain::paint(const Camera& camera) {
     modelMat.translate(cc[0], cc[1], cc[2]);
     modelMat.scale(colliderSphere.getRadius());
     shader->setUniformValue("ModelMatrix", modelMat);
-    shader->setUniformValue("matdiff", 0.8f, 0.4f, 0.4f);
+    shader->setUniformValue("matdiff", GLfloat(0.3), GLfloat(0.7), GLfloat(0.1));
     shader->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
     shader->setUniformValue("matshin", 0.0f);
     glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereH, GL_UNSIGNED_INT, 0);
 
-    // draw box
     vaoCube->bind();
     cc = colliderBox.getCenter();
     Vec3 hs = 0.5*colliderBox.getSize();
     modelMat = QMatrix4x4();
-    modelMat.translate(cc[0], cc[1], cc[2]);
-    modelMat.scale(hs[0], hs[1], hs[2]);
-    shader->setUniformValue("ModelMatrix", modelMat);
-    shader->setUniformValue("matdiff", 0.4f, 0.8f, 0.4f);
-    shader->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
-    shader->setUniformValue("matshin", 0.0f);
-    glFuncs->glDrawElements(GL_TRIANGLES, 3*2*6, GL_UNSIGNED_INT, 0);
+    
+    for (size_t i = 0; i < boardBoxes.size(); i++) {
+        cc = boardBoxes[i].getCenter();
+        hs = 0.5*boardBoxes[i].getSize();
+        modelMat = QMatrix4x4();
+        modelMat.translate(cc[0], cc[1], cc[2]);
+        modelMat.scale(hs[0], hs[1], hs[2]);
+        shader->setUniformValue("ModelMatrix", modelMat);
+        shader->setUniformValue("matdiff", GLfloat(boardColors[i][0]), GLfloat(boardColors[i][1]), GLfloat(boardColors[i][2]));
+        shader->setUniformValue("matspec", 0.0f, 0.0f, 0.0f);
+        shader->setUniformValue("matshin", 0.0f);
+        glFuncs->glDrawElements(GL_TRIANGLES, 3*2*6, GL_UNSIGNED_INT, 0);
+    }
+    
     vaoCube->release();
     shader->release();
 }
@@ -201,24 +241,18 @@ void SceneFountain::update(double dt) {
     int emitParticles = std::max(1, int(std::round(emitRate * dt)));
     for (int i = 0; i < emitParticles; i++) {
         Particle* p;
-        ColliderSphere* pc;
-
         if (!deadParticles.empty()) {
             // reuse one dead particle
             p = deadParticles.front();
             deadParticles.pop_front();
-
-            pc = particleColliders[p->id];
         }
         else {
+            // create new particle
             p = new Particle();
-            p->id = system.getNumParticles();
             system.addParticle(p);
 
+            // don't forget to add particle to forces that affect it
             fGravity->addInfluencedParticle(p);
-
-            pc = new ColliderSphere();
-            particleColliders.push_back(pc);
         }
 
         p->color = Vec3(153/255.0, 217/255.0, 234/255.0);
@@ -229,10 +263,10 @@ void SceneFountain::update(double dt) {
         double y = 0;
         double z = Random::get(-20.0, 20.0);
         p->pos = Vec3(x, y, z) + fountainPos;
-        p->vel = Vec3(0,0,0);
 
-        pc->setCenter(p->pos);
-        pc->setRadius(p->radius);
+		double xVel = Random::get(-10.0, 10.0);
+		double zVel = Random::get(-10.0, 10.0);
+        p->vel = Vec3(xVel,20,zVel);
     }
 
     // integration step
@@ -243,48 +277,27 @@ void SceneFountain::update(double dt) {
     // collisions
     Collision colInfo;
     for (Particle* p : system.getParticles()) {
-        if (colliderFloor.testCollision(p, colInfo)) {
-            colliderFloor.resolveCollision(p, colInfo, kBounce, kFriction);
-        }
-        if (colliderRamp.testCollision(p, colInfo)) {
-            colliderRamp.resolveCollision(p, colInfo, kBounce, kFriction);
-        }
-        if (colliderSphere.testCollision(p, colInfo)) {
-			colliderSphere.resolveCollision(p, colInfo, kBounce, kFriction);
-		}
-        if (colliderBox.testCollision(p, colInfo)) {
-			colliderBox.resolveCollision(p, colInfo, kBounce, kFriction);
-		}
-    }
-
-    if (particleCollisionsEnabled)
-    {
-        system.buildSpatialHash(2);
-        
-        for (Particle* p : system.getParticles()) {
-            particleColliders[p->id]->setCenter(p->pos);
+        // Colisión con el plano grande
+        if (colliderPlane.testCollision(p, colInfo)) {
+            colliderPlane.resolveCollision(p, colInfo, kBounce, kFriction);
+            planeCollisions++;
+            // De negro (0,0,0) a blanco (1,1,1)
+            double intensity = std::min(1.0, planeCollisions / 10000.0);
+            planeColor = Vec3(intensity, intensity, intensity);
         }
         
-        // Check collisions between particles
-        for (Particle* p : system.getParticles()) {
-            std::unordered_map<Particle*, double> neighbors;
-            system.getNeighbors(p, 2.0, neighbors);
-            for (const auto& [p1, dist] : neighbors) {
-                if (p->id < p1->id) {
-                    Collision colInfo;
-                    if (particleColliders[p->id]->testCollision(p1, colInfo)) {
-                        particleColliders[p->id]->resolveCollision(p1, colInfo, kBounce, kFriction);
-                        colInfo.normal = -colInfo.normal;
-                        particleColliders[p1->id]->resolveCollision(p, colInfo, kBounce, kFriction);
-                        
-                        particleColliders[p->id]->setCenter(p->pos);
-                        particleColliders[p1->id]->setCenter(p1->pos);
-                    }
-                }
-            }
-        }
-    }
+        if(colliderSphere.testCollision(p, colInfo)) {
+            colliderSphere.resolveCollision(p, colInfo, kBounce, kFriction);
+		}
 
+		for (size_t i = 0; i < boardBoxes.size(); i++) {
+		    if (boardBoxes[i].testCollision(p, colInfo)) {
+		        boardBoxes[i].resolveCollision(p, colInfo, kBounce, kFriction);
+		        boardCollisions[i]++;
+		        boardColors[i] = getHeatmapColor(boardCollisions[i], boardBaseHues[i]);
+		    }
+		}
+    }
 
     // check dead particles
     for (Particle* p : system.getParticles()) {
@@ -296,6 +309,7 @@ void SceneFountain::update(double dt) {
         }
     }
 }
+
 
 void SceneFountain::mousePressed(const QMouseEvent* e, const Camera&)
 {
@@ -319,10 +333,20 @@ void SceneFountain::mouseMoved(const QMouseEvent* e, const Camera& cam)
             fountainPos += disp;
         }
         else if (e->modifiers() & Qt::ShiftModifier){
-            // move box
-            colliderBox.setFromCenterSize(
-                        colliderBox.getCenter() + disp,
-                        colliderBox.getSize());
+            // move sphere
+            colliderSphere.setCenter(colliderSphere.getCenter() + disp);
         }
     }
+}
+
+Vec3 SceneFountain::getHeatmapColor(int collisionCount, double baseHue, int maxCollisions)
+{
+    double t = std::min(1.0, double(collisionCount) / double(maxCollisions));
+    
+    double hue = baseHue;
+    double saturation = 1.0;
+    double value = t;    
+
+	QColor color = QColor::fromHsvF(hue / 360.0, saturation, value);
+    return Vec3(color.redF(), color.greenF(), color.blueF());
 }
