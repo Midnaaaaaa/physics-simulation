@@ -76,6 +76,7 @@ protected:
     std::vector<ForceSpring*> springsShear;
     std::vector<ForceSpring*> springsBend;
 	ColliderSphere* colliderBall = nullptr;
+    ColliderAABB* colliderBox = nullptr;
 
     // cloth properties
     std::vector<bool> fixedParticle;

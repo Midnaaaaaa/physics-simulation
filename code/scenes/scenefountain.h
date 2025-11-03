@@ -57,12 +57,14 @@ protected:
 
     ColliderSphere colliderSphere;
     ColliderAABB   colliderBox;
-    ColliderPlane colliderPlane;  // Plano grande debajo del tablero
+    ColliderPlane colliderPlane;
 
+    std::vector<ColliderSphere*> particleColliders;
+    bool particleCollisionsEnabled = false;
 
     double kBounce, kFriction;
-    double emitRate;
-    double maxParticleLife;
+    double emitRate = 100;
+    double maxParticleLife = 20;
 
     Vec3 fountainPos;
     int mouseX, mouseY;

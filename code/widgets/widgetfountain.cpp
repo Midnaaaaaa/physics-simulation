@@ -27,3 +27,14 @@ double WidgetFountain::getKElastic() const {
 double WidgetFountain::getKFriction() const {
     return ui->kfriction->value();
 }
+double WidgetFountain::getParticleLife() const {
+    return ui->particleLife->value();
+}
+
+double WidgetFountain::getParticleEmitRate() const {
+    return ui->emitRate->value();
+}
+
+bool WidgetFountain::getParticleCollisions() const {
+    return ui->particleCollision->isChecked();
+}

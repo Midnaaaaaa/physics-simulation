@@ -18,6 +18,10 @@ public:
     double getKElastic() const;
     double getKFriction() const;
 
+	double getParticleLife()     const;
+    double getParticleEmitRate() const;
+	bool   getParticleCollisions() const;
+
 signals:
     void updatedParameters();
 

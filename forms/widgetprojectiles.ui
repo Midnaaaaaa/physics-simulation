@@ -198,6 +198,9 @@
     <layout class="QHBoxLayout" name="qlayout2">
      <item>
       <widget class="QDoubleSpinBox" name="klinear">
+       <property name="maximum">
+        <double>1.000000000000000</double>
+       </property>
        <property name="singleStep">
         <double>0.100000000000000</double>
        </property>
@@ -216,6 +219,9 @@
     <layout class="QHBoxLayout" name="qlayout1">
      <item>
       <widget class="QDoubleSpinBox" name="kquadratic">
+       <property name="maximum">
+        <double>1.000000000000000</double>
+       </property>
        <property name="singleStep">
         <double>0.100000000000000</double>
        </property>
@@ -252,10 +258,24 @@
     </widget>
    </item>
    <item row="11" column="1">
-    <widget class="QDoubleSpinBox" name="elasticity"/>
+    <widget class="QDoubleSpinBox" name="elasticity">
+     <property name="maximum">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+    </widget>
    </item>
    <item row="12" column="1">
-    <widget class="QDoubleSpinBox" name="friction"/>
+    <widget class="QDoubleSpinBox" name="friction">
+     <property name="maximum">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

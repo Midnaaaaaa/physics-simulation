@@ -26,6 +26,9 @@ SceneCloth::~SceneCloth() {
     for (ForceSpring* f : springsStretch) delete f;
     for (ForceSpring* f : springsShear) delete f;
     for (ForceSpring* f : springsBend) delete f;
+    // colliders
+    if (colliderBall) delete colliderBall;
+    if (colliderBox)  delete colliderBox;
 }
 
 void SceneCloth::initialize() {
@@ -81,6 +84,9 @@ void SceneCloth::initialize() {
 	colliderBall = new ColliderSphere();
 	colliderBall->setCenter(Vec3(40, -20, 0));
 	colliderBall->setRadius(30);
+
+    colliderBox = new ColliderAABB();
+    colliderBox->setFromCenterSize(Vec3(0, 0, 0), Vec3(60, 30, 60));
 }
 
 
@@ -352,6 +358,21 @@ void SceneCloth::paint(const Camera& camera)
     vaoSphereL->bind();
     glFuncs->glDrawElements(GL_TRIANGLES, 3*numFacesSphereL, GL_UNSIGNED_INT, 0);
 
+
+    modelMat = QMatrix4x4();
+    // draw AABB centered at its center with half-extent scaling (cube model ranges [-1,1])
+    const Vec3 boxCenter = colliderBox->getCenter();
+    const Vec3 boxSize   = colliderBox->getSize();
+    modelMat.translate(boxCenter.x(), boxCenter.y(), boxCenter.z());
+    modelMat.scale(0.5f*boxSize.x(), 0.5f*boxSize.y(), 0.5f*boxSize.z());
+    shaderPhong->setUniformValue("ModelMatrix", modelMat);
+    shaderPhong->setUniformValue("matdiff", 0.3f, 0.7f, 0.3f);
+    shaderPhong->setUniformValue("matspec", 1.0f, 1.0f, 1.0f);
+    shaderPhong->setUniformValue("matshin", 100.f);
+    vaoCube->bind();
+    glFuncs->glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    
+
     shaderPhong->release();
 
 
@@ -503,6 +524,9 @@ void SceneCloth::update(double dt)
         if(colliderBall->testCollision(p, colInfo)){
             colliderBall->resolveCollision(p, colInfo, colBounce, colFriction);
 		}
+        if(colliderBox->testCollision(p, colInfo)){
+            colliderBox->resolveCollision(p, colInfo, colBounce, colFriction);
+        }
     }
 
     // needed after we have done collisions and relaxation, since spring forces depend on p and v
@@ -556,7 +580,9 @@ void SceneCloth::mouseMoved(const QMouseEvent* e, const Camera& cam)
         colliderBall->setCenter(colliderBall->getCenter() + disp);
     }
     else if (e->modifiers() & Qt::ShiftModifier) {
-
+        double d = -(colliderBox->getCenter() - cam.getPos()).dot(cam.zAxis());
+        Vec3 disp = cam.worldSpaceDisplacement(dx, -dy, d);
+        colliderBox->setFromCenterSize(colliderBox->getCenter() + disp, colliderBox->getSize());
     }
     else {
         if (selectedParticle >= 0) {
